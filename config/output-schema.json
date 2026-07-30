@@ -1,0 +1,51 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Recruiter Screen Output",
+  "description": "The structured shape the ENRICH stage produces from screen notes plus candidate context. The FORMAT stage renders this into a doc, email, doc tab, or ATS note. Edit this to change what the screen writeup contains; keep it in sync with config/screen-doc.template.md.",
+  "type": "object",
+  "properties": {
+    "candidate": {
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "email": { "type": "string" },
+        "role": { "type": "string", "description": "Role the candidate was screened for" },
+        "linkedin_url": { "type": ["string", "null"] },
+        "resume_link": { "type": ["string", "null"] }
+      },
+      "required": ["name", "role"]
+    },
+    "screen_date": { "type": "string", "description": "ISO date of the screen" },
+    "summary": { "type": "string", "description": "2-3 sentence read a hiring manager can skim" },
+    "standard_answers": {
+      "type": "array",
+      "description": "One entry per cemented standard question, answered from the notes and context. Order and ids follow config/standard-questions.json.",
+      "items": {
+        "type": "object",
+        "properties": {
+          "question_id": { "type": "string" },
+          "question": { "type": "string" },
+          "answer": { "type": "string", "description": "The answer inferred from the notes; say 'not covered' if the notes do not address it" },
+          "evidence": { "type": ["string", "null"], "description": "Short quote or paraphrase from the notes that supports the answer" },
+          "confidence": { "type": "string", "enum": ["high", "medium", "low"] }
+        },
+        "required": ["question_id", "question", "answer", "confidence"]
+      }
+    },
+    "strengths": { "type": "array", "items": { "type": "string" } },
+    "concerns": { "type": "array", "items": { "type": "string" } },
+    "recommendation": {
+      "type": "string",
+      "enum": ["strong_advance", "advance", "maybe", "weak_no", "no"],
+      "description": "Overall read; the qualitative tier is the source of truth, score is the sort key"
+    },
+    "score": { "type": "number", "minimum": 0, "maximum": 100 },
+    "follow_up_questions": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Open questions the next interviewer should resolve"
+    },
+    "next_steps": { "type": "string" }
+  },
+  "required": ["candidate", "summary", "standard_answers", "strengths", "concerns", "recommendation", "next_steps"]
+}

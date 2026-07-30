@@ -1,0 +1,82 @@
+{
+  "candidate": {
+    "name": "Jordan Rivera",
+    "email": "jordan.rivera@example.com",
+    "role": "Senior Backend Engineer",
+    "linkedin_url": "https://www.linkedin.com/in/example",
+    "resume_link": null
+  },
+  "screen_date": "2026-07-16",
+  "summary": "Six years backend (Python/Go), owns a payments service. Strong system design, mission-motivated. Not covered: formal team leadership.",
+  "standard_answers": [
+    {
+      "question_id": "motivation",
+      "question": "Why is the candidate interested in this role and company right now?",
+      "answer": "Sample answer from notes.",
+      "evidence": null,
+      "confidence": "medium"
+    },
+    {
+      "question_id": "role_fit",
+      "question": "How well does the candidate's background map to the core responsibilities of this role?",
+      "answer": "Sample answer from notes.",
+      "evidence": null,
+      "confidence": "medium"
+    },
+    {
+      "question_id": "experience_depth",
+      "question": "What is the depth and scope of the candidate's most relevant experience?",
+      "answer": "Sample answer from notes.",
+      "evidence": null,
+      "confidence": "medium"
+    },
+    {
+      "question_id": "comp_expectations",
+      "question": "What are the candidate's compensation expectations, and are they within band?",
+      "answer": "Sample answer from notes.",
+      "evidence": null,
+      "confidence": "medium"
+    },
+    {
+      "question_id": "availability",
+      "question": "What is the candidate's availability and notice period?",
+      "answer": "Sample answer from notes.",
+      "evidence": null,
+      "confidence": "medium"
+    },
+    {
+      "question_id": "location_workauth",
+      "question": "What is the candidate's location and work authorization status?",
+      "answer": "Sample answer from notes.",
+      "evidence": null,
+      "confidence": "medium"
+    },
+    {
+      "question_id": "logistics",
+      "question": "Any logistics or process notes the next interviewer should know?",
+      "answer": "Sample answer from notes.",
+      "evidence": null,
+      "confidence": "medium"
+    },
+    {
+      "question_id": "red_flags",
+      "question": "Are there any concerns or red flags from the conversation?",
+      "answer": "Sample answer from notes.",
+      "evidence": null,
+      "confidence": "medium"
+    }
+  ],
+  "strengths": [
+    "Strong system design",
+    "Clear incident walkthrough"
+  ],
+  "concerns": [
+    "No formal team lead experience"
+  ],
+  "recommendation": "advance",
+  "score": 74,
+  "follow_up_questions": [
+    "Probe leadership scope in the next round."
+  ],
+  "next_steps": "Advance to hiring manager screen."
+}

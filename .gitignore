@@ -1,0 +1,9 @@
+# Instance-specific, never committed
+*.local.json
+*.local.md
+CREATED-IDS.local.md
+.env
+
+# Python cache (from tools/)
+__pycache__/
+*.pyc

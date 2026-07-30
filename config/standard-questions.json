@@ -1,0 +1,46 @@
+{
+  "description": "The cemented standard screen questions. This is the 'edit once, lock it' surface. The ENRICH stage answers every question in this list from the screen notes plus candidate context. Add, remove, or reword questions here and the enrichment adapts with no workflow changes. In n8n these are pasted into the workflow's Set Config node field `standard_questions` (or loaded from a Data Table); this file is the source of truth in the repo.",
+  "version": 1,
+  "questions": [
+    {
+      "id": "motivation",
+      "question": "Why is the candidate interested in this role and company right now?",
+      "guidance": "Look for a specific, credible reason tied to the role, not a generic 'looking for growth'."
+    },
+    {
+      "id": "role_fit",
+      "question": "How well does the candidate's background map to the core responsibilities of this role?",
+      "guidance": "Map concrete past work to the role's must-do outcomes. Adjacent experience counts if the underlying skill transfers."
+    },
+    {
+      "id": "experience_depth",
+      "question": "What is the depth and scope of the candidate's most relevant experience?",
+      "guidance": "Scope, ownership, and outcomes matter more than titles or tenure length."
+    },
+    {
+      "id": "comp_expectations",
+      "question": "What are the candidate's compensation expectations, and are they within band?",
+      "guidance": "Capture the number or range if the notes have it; flag if materially above the role band."
+    },
+    {
+      "id": "availability",
+      "question": "What is the candidate's availability and notice period?",
+      "guidance": "Start date, notice period, competing processes, and urgency."
+    },
+    {
+      "id": "location_workauth",
+      "question": "What is the candidate's location and work authorization status?",
+      "guidance": "Onsite/hybrid/remote fit, relocation willingness, and any sponsorship need."
+    },
+    {
+      "id": "logistics",
+      "question": "Any logistics or process notes the next interviewer should know?",
+      "guidance": "Scheduling constraints, interview format preferences, accommodations, referral source."
+    },
+    {
+      "id": "red_flags",
+      "question": "Are there any concerns or red flags from the conversation?",
+      "guidance": "Inconsistencies, communication issues, misaligned expectations. Absence of red flags is a valid answer."
+    }
+  ]
+}
