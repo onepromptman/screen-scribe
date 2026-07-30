@@ -23,8 +23,8 @@
               "type": "boolean"
             },
             {
-              "id": "44c07beb779bc1593572d534aa1b5de6",
-              "name": "USE_MODEL",
+              "id": "8a7ef1dc165c6522a9f6c89d408682d6",
+              "name": "deliver_pdf",
               "value": false,
               "type": "boolean"
             },
@@ -123,7 +123,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// FORMAT: render the structured output through the doc template (mustache-lite).\nconst cfg = $('Set Config').first().json;\nlet data = ($input.first().json || {}).enriched || null;\nif (!data) {\n  // A1 / USE_MODEL=false: deterministic minimal object from the notes.\n  const j = $input.first().json;\n  const candidate = j.candidate || {\n    name: cfg.candidate_name, email: cfg.candidate_email, role: cfg.candidate_role,\n    linkedin_url: cfg.candidate_linkedin, resume_link: null,\n  };\n  data = {\n    candidate,\n    screen_date: $now.toISODate(),\n    summary: (j.notes_text || '').split('\\n').filter(Boolean).slice(0, 3).join(' '),\n    standard_answers: [], strengths: [], concerns: [],\n    recommendation: 'maybe', follow_up_questions: [],\n    next_steps: 'Reviewer to add next steps.', raw_notes: j.notes_text,\n  };\n}\nfunction render(tpl, d) {\n  tpl = tpl.replace(/{{#([\\w.]+)}}([\\s\\S]*?){{\\/\\1}}/g, function (m, key, inner) {\n    const val = key.split('.').reduce(function (o, k) { return o == null ? undefined : o[k]; }, d);\n    if (Array.isArray(val)) {\n      return val.map(function (it) {\n        if (it !== null && typeof it === 'object') return render(inner, it);\n        return inner.replace(/{{\\.}}/g, it == null ? '' : String(it));\n      }).join('');\n    }\n    if (val) return render(inner, d);\n    return '';\n  });\n  tpl = tpl.replace(/{{([\\w.]+)}}/g, function (m, key) {\n    const val = key.split('.').reduce(function (o, k) { return o == null ? undefined : o[k]; }, d);\n    return val == null ? '' : String(val);\n  });\n  return tpl;\n}\nconst tpl = cfg.doc_template || '# {{candidate.name}}\\n\\n{{summary}}';\nlet body;\ntry { body = render(tpl, data); }\ncatch (e) { body = '# ' + ((data.candidate || {}).name || 'Screen') + '\\n\\n' + (data.summary || '') + '\\n\\n' + (data.raw_notes || ''); }\nconst cand = data.candidate || {};\nconst title = (cand.name || 'Candidate') + ' - ' + (cand.role || 'Screen') + ' - Recruiter Screen';\nreturn { json: { ...($input.first().json), doc_title: title, doc_body_markdown: body, screen_output: data } };\n"
+        "jsCode": "// FORMAT: render the structured output through the doc template (mustache-lite).\nconst cfg = $('Set Config').first().json;\nlet data = ($input.first().json || {}).enriched || null;\nif (!data) {\n  // A1 / enrichment off: deterministic minimal object from the notes.\n  const j = $input.first().json;\n  const candidate = j.candidate || {\n    name: cfg.candidate_name, email: cfg.candidate_email, role: cfg.candidate_role,\n    linkedin_url: cfg.candidate_linkedin, resume_link: null,\n  };\n  data = {\n    candidate,\n    screen_date: $now.toISODate(),\n    summary: (j.notes_text || '').split('\\n').filter(Boolean).slice(0, 3).join(' '),\n    standard_answers: [], strengths: [], concerns: [],\n    recommendation: 'maybe', follow_up_questions: [],\n    next_steps: 'Reviewer to add next steps.', raw_notes: j.notes_text,\n  };\n}\nfunction render(tpl, d) {\n  tpl = tpl.replace(/{{#([\\w.]+)}}([\\s\\S]*?){{\\/\\1}}/g, function (m, key, inner) {\n    const val = key.split('.').reduce(function (o, k) { return o == null ? undefined : o[k]; }, d);\n    if (Array.isArray(val)) {\n      return val.map(function (it) {\n        if (it !== null && typeof it === 'object') return render(inner, it);\n        return inner.replace(/{{\\.}}/g, it == null ? '' : String(it));\n      }).join('');\n    }\n    if (val) return render(inner, d);\n    return '';\n  });\n  tpl = tpl.replace(/{{([\\w.]+)}}/g, function (m, key) {\n    const val = key.split('.').reduce(function (o, k) { return o == null ? undefined : o[k]; }, d);\n    return val == null ? '' : String(val);\n  });\n  return tpl;\n}\nconst tpl = cfg.doc_template || '# {{candidate.name}}\\n\\n{{summary}}';\nlet body;\ntry { body = render(tpl, data); }\ncatch (e) { body = '# ' + ((data.candidate || {}).name || 'Screen') + '\\n\\n' + (data.summary || '') + '\\n\\n' + (data.raw_notes || ''); }\nconst cand = data.candidate || {};\nconst title = (cand.name || 'Candidate') + ' - ' + (cand.role || 'Screen') + ' - Recruiter Screen';\nreturn { json: { ...($input.first().json), doc_title: title, doc_body_markdown: body, screen_output: data } };\n"
       },
       "id": "f2594dde283a1c36ca06717690ec327c",
       "name": "Format Screen (FORMAT)",
@@ -169,7 +169,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// TEST_MODE preview: show what WOULD be written; nothing is sent.\nconst j = $input.first().json;\nreturn { json: {\n  dry_run: true,\n  would_create_doc: { title: j.doc_title, folder_id: j.drive_folder_id },\n  would_insert_body_chars: (j.doc_body_markdown || '').length,\n  would_append_sheet_row: {\n    sheet_id: j.sheet_id, tab: j.sheet_tab,\n    candidate: (j.screen_output && j.screen_output.candidate) || null,\n    recommendation: j.screen_output && j.screen_output.recommendation,\n  },\n  doc_body_preview: (j.doc_body_markdown || '').slice(0, 1200),\n} };\n"
+        "jsCode": "// TEST_MODE preview: show what WOULD be written; nothing is sent.\nconst j = $input.first().json;\nreturn { json: {\n  dry_run: true,\n  would_create_doc: { title: j.doc_title, folder_id: j.drive_folder_id },\n  would_insert_body_chars: (j.doc_body_markdown || '').length,\n  would_deliver_pdf: !!j.deliver_pdf,\n  would_append_sheet_row: {\n    sheet_id: j.sheet_id, tab: j.sheet_tab,\n    candidate: (j.screen_output && j.screen_output.candidate) || null,\n    recommendation: j.screen_output && j.screen_output.recommendation,\n  },\n  doc_body_preview: (j.doc_body_markdown || '').slice(0, 1200),\n} };\n"
       },
       "id": "432905445fae88e53b33194e21c189b6",
       "name": "Dry Run Preview",
@@ -230,6 +230,102 @@
         "googleDocsOAuth2Api": {
           "id": "REPLACE_WITH_GOOGLEDOCSOAUTH2API_CREDENTIAL_ID",
           "name": "Google Docs OAuth2 API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "66cf96c9e1f9d0415ca85466f584f289",
+              "leftValue": "={{ $('Set Config').item.json.deliver_pdf }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "dec436dc37278acadddf5dbc2536393d",
+      "name": "Deliver PDF?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1440,
+        640
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "download",
+        "fileId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $('Create Doc').item.json.id }}"
+        },
+        "options": {
+          "googleFileConversion": {
+            "conversion": {
+              "docsToFormat": "application/pdf"
+            }
+          }
+        }
+      },
+      "id": "c4c63a22b37d2a382aee161d4b4310f5",
+      "name": "Export Doc as PDF",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        1680,
+        640
+      ],
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "REPLACE_WITH_GOOGLEDRIVEOAUTH2API_CREDENTIAL_ID",
+          "name": "Google Drive OAuth2 API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "upload",
+        "name": "={{ $('Format Screen (FORMAT)').item.json.doc_title }}.pdf",
+        "driveId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "My Drive"
+        },
+        "folderId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $('Set Config').item.json.drive_folder_id }}"
+        },
+        "inputDataFieldName": "data",
+        "options": {}
+      },
+      "id": "a08d1aaef90c4af4d90a2af152c88212",
+      "name": "Save PDF to Drive",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        1920,
+        640
+      ],
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "REPLACE_WITH_GOOGLEDRIVEOAUTH2API_CREDENTIAL_ID",
+          "name": "Google Drive OAuth2 API"
         }
       }
     },
@@ -509,6 +605,46 @@
       ]
     },
     "Insert Doc Body": {
+      "main": [
+        [
+          {
+            "node": "Deliver PDF?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Deliver PDF?": {
+      "main": [
+        [
+          {
+            "node": "Export Doc as PDF",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Append Screen Row",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Export Doc as PDF": {
+      "main": [
+        [
+          {
+            "node": "Save PDF to Drive",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save PDF to Drive": {
       "main": [
         [
           {

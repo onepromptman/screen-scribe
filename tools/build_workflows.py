@@ -31,6 +31,7 @@ CRED = {
     "sheets": {"googleSheetsOAuth2Api": {"id": "REPLACE_WITH_GOOGLESHEETSOAUTH2API_CREDENTIAL_ID", "name": "Google Sheets OAuth2 API"}},
     "slack": {"slackOAuth2Api": {"id": "REPLACE_WITH_SLACKOAUTH2API_CREDENTIAL_ID", "name": "Slack OAuth2 API"}},
     "ats": {"httpBasicAuth": {"id": "REPLACE_WITH_ATS_HTTPBASICAUTH_CREDENTIAL_ID", "name": "ATS Basic Auth"}},
+    "drive": {"googleDriveOAuth2Api": {"id": "REPLACE_WITH_GOOGLEDRIVEOAUTH2API_CREDENTIAL_ID", "name": "Google Drive OAuth2 API"}},
 }
 
 SAMPLE_NOTES = (
@@ -81,9 +82,10 @@ return { json: {
 } };
 """
 
-JS_RESOLVE = """// RESOLVE: derive candidate identity + enrichment inputs.
-// Production: parse the calendar invite attendee email / LinkedIn, or read a
-// resume dropped in Slack, and append to candidate.resume_text.
+JS_RESOLVE = """// RESOLVE: derive candidate identity + enrichment inputs, and pick the
+// enrichment directive from enrichment_level (off/low/medium/high).
+// Production: parse the calendar invite attendee email / LinkedIn / resume link,
+// or read a resume dropped in Slack, and append to candidate.resume_text.
 const j = $input.first().json;
 const candidate = {
   name: j.candidate_name || '',
@@ -93,7 +95,23 @@ const candidate = {
   resume_text: j.candidate_resume_text || null,
   resume_link: j.candidate_resume_link || null,
 };
-return { json: { ...j, candidate } };
+const LEVELS = {
+  low: 'ENRICHMENT LEVEL: LOW (extract-only). Report ONLY facts explicitly stated in the notes or provided context. Do NOT infer, suggest, rate, or fill gaps. For any question the notes do not directly address, set the answer to: Not covered in the screen, and confidence to low. Base the recommendation solely on stated facts; if there is not enough to judge, use the maybe tier.',
+  medium: 'ENRICHMENT LEVEL: MEDIUM. Answer from the notes and provided context. Light inference is allowed only where the notes strongly imply it, and must be reflected in the evidence field. Never invent specifics. Provide a confidence rating on every answer.',
+  high: 'ENRICHMENT LEVEL: HIGH. Answer from the notes and context, synthesize across them, and infer where reasonable - but ground every inference in evidence and never fabricate specifics. Suggest follow-up questions and give a clear overall read.',
+};
+const level = (j.enrichment_level || 'medium').toLowerCase();
+const enrichment_directive = LEVELS[level] || LEVELS.medium;
+return { json: { ...j, candidate, enrichment_level: level, enrichment_directive } };
+"""
+
+JS_MERGE_RESUME = """// Merge the extracted resume text into candidate.resume_text before ENRICH.
+// Fail-open: if extraction produced nothing, the context passes through unchanged.
+const ctx = $('Resolve Context (RESOLVE)').first().json;
+const extracted = (($input.first().json || {}).text || '').toString().trim();
+const existing = (ctx.candidate && ctx.candidate.resume_text) || '';
+const resume_text = [existing, extracted].filter(Boolean).join('\\n\\n') || null;
+return { json: { ...ctx, candidate: { ...ctx.candidate, resume_text } } };
 """
 
 JS_PARSE_ENRICH = """// Normalize the agent's structured output into `enriched`.
@@ -114,7 +132,7 @@ JS_FORMAT = """// FORMAT: render the structured output through the doc template 
 const cfg = $('Set Config').first().json;
 let data = ($input.first().json || {}).enriched || null;
 if (!data) {
-  // A1 / USE_MODEL=false: deterministic minimal object from the notes.
+  // A1 / enrichment off: deterministic minimal object from the notes.
   const j = $input.first().json;
   const candidate = j.candidate || {
     name: cfg.candidate_name, email: cfg.candidate_email, role: cfg.candidate_role,
@@ -162,6 +180,7 @@ return { json: {
   dry_run: true,
   would_create_doc: { title: j.doc_title, folder_id: j.drive_folder_id },
   would_insert_body_chars: (j.doc_body_markdown || '').length,
+  would_deliver_pdf: !!j.deliver_pdf,
   would_append_sheet_row: {
     sheet_id: j.sheet_id, tab: j.sheet_tab,
     candidate: (j.screen_output && j.screen_output.candidate) || null,
@@ -226,6 +245,7 @@ const note = provider === 'lever'
 return { json: {
   dry_run: true, ats_provider: provider,
   would_create_doc: { title: j.doc_title, folder_id: j.drive_folder_id },
+  would_deliver_pdf: !!j.deliver_pdf,
   would_ats_lookup: lookup,
   would_ats_add_note: note,
   doc_body_preview: (j.doc_body_markdown || '').slice(0, 1200),
@@ -261,7 +281,7 @@ ENRICH_TEXT = (
 def set_config(archetype):
     a = [
         {"id": nid("a-testmode"), "name": "TEST_MODE", "value": True, "type": "boolean"},
-        {"id": nid("a-usemodel"), "name": "USE_MODEL", "value": archetype != "A1", "type": "boolean"},
+        {"id": nid("a-pdf"), "name": "deliver_pdf", "value": False, "type": "boolean"},
         {"id": nid("a-cc"), "name": "company_context",
          "value": "<org_name> is a placeholder company. Replace this with a short description of your company, the role's team, and what a strong hire looks like. It is injected into the enrichment prompt.",
          "type": "string"},
@@ -277,6 +297,9 @@ def set_config(archetype):
         {"id": nid("a-dt"), "name": "doc_template", "value": DOC_TEMPLATE, "type": "string"},
     ]
     if archetype != "A1":
+        a.append({"id": nid("a-el"), "name": "enrichment_level",
+                  "value": "medium", "type": "string"})
+        a.append({"id": nid("a-fr"), "name": "fetch_resume", "value": False, "type": "boolean"})
         a.append({"id": nid("a-sq"), "name": "standard_questions",
                   "value": json.dumps(STANDARD_QUESTIONS, indent=2), "type": "string"})
     if archetype == "A3":
@@ -385,15 +408,36 @@ def build(archetype: str) -> dict:
         nodes.append(node("Format Screen (FORMAT)", "n8n-nodes-base.code", {"jsCode": JS_FORMAT}, 2, x, 300)); x += 240
         C("Fetch Notes (SOURCE)", "Format Screen (FORMAT)")
     else:
+        rx = x
         nodes.append(node("Resolve Context (RESOLVE)", "n8n-nodes-base.code", {"jsCode": JS_RESOLVE}, 2, x, 300)); x += 240
         C("Fetch Notes (SOURCE)", "Resolve Context (RESOLVE)")
+        # optional resume ingestion lane (fetch_resume): Drive download -> extract text -> merge
+        nodes.append(node("Fetch Resume?", "n8n-nodes-base.if", {
+            "conditions": {"options": {"caseSensitive": True, "typeValidation": "loose", "version": 2},
+                           "conditions": [{"id": nid("c-fr"), "leftValue": "={{ $json.fetch_resume }}", "rightValue": True,
+                                           "operator": {"type": "boolean", "operation": "true", "singleValue": True}}],
+                           "combinator": "and"}, "options": {}}, 2.3, rx, 700))
+        nodes.append(node("Download Resume", "n8n-nodes-base.googleDrive", {
+            "operation": "download",
+            "fileId": {"__rl": True, "mode": "url",
+                       "value": "={{ $('Resolve Context (RESOLVE)').item.json.candidate.resume_link }}"},
+            "options": {"googleFileConversion": {"conversion": {"docsToFormat": "application/pdf"}}}},
+            3, rx + 240, 700, creds=CRED["drive"]))
+        nodes.append(node("Extract Resume Text", "n8n-nodes-base.extractFromFile",
+                          {"operation": "pdf", "options": {}}, 1, rx + 480, 700))
+        nodes.append(node("Merge Resume", "n8n-nodes-base.code", {"jsCode": JS_MERGE_RESUME}, 2, rx + 720, 700))
         # Use Model? gate
         nodes.append(node("Use Model?", "n8n-nodes-base.if", {
             "conditions": {"options": {"caseSensitive": True, "typeValidation": "loose", "version": 2},
-                           "conditions": [{"id": nid("c-um"), "leftValue": "={{ $json.USE_MODEL }}", "rightValue": True,
-                                           "operator": {"type": "boolean", "operation": "true", "singleValue": True}}],
+                           "conditions": [{"id": nid("c-um"), "leftValue": "={{ $json.enrichment_level }}", "rightValue": "off",
+                                           "operator": {"type": "string", "operation": "notEquals"}}],
                            "combinator": "and"}, "options": {}}, 2.3, x, 300)); x += 240
-        C("Resolve Context (RESOLVE)", "Use Model?")
+        C("Resolve Context (RESOLVE)", "Fetch Resume?")
+        C("Fetch Resume?", "Download Resume", so=0)      # true -> fetch + extract
+        C("Fetch Resume?", "Use Model?", so=1)           # false -> straight to enrichment gate
+        C("Download Resume", "Extract Resume Text")
+        C("Extract Resume Text", "Merge Resume")
+        C("Merge Resume", "Use Model?")
         # enrich chain (true branch)
         nodes.append(node("Enrich Model", "@n8n/n8n-nodes-langchain.lmChatAnthropic", {
             "model": {"__rl": True, "mode": "id", "value": "claude-sonnet-4-5-20250929"},
@@ -401,7 +445,8 @@ def build(archetype: str) -> dict:
         nodes.append(node("AI Enrich", "@n8n/n8n-nodes-langchain.agent", {
             "promptType": "define", "text": ENRICH_TEXT,
             "hasOutputParser": True,
-            "options": {"systemMessage": ENRICH_SYSTEM, "maxIterations": 3}}, 1.7, x, 300)); x += 240
+            "options": {"systemMessage": "=" + ENRICH_SYSTEM + "\n\n{{ $json.enrichment_directive }}",
+                        "maxIterations": 3}}, 1.7, x, 300)); x += 240
         nodes.append(node("Structured Output Parser", "@n8n/n8n-nodes-langchain.outputParserStructured", {
             "schemaType": "manual", "inputSchema": json.dumps(OUTPUT_SCHEMA, indent=2)}, 1.3, x, 520))
         nodes.append(node("Parse Enrich Output", "n8n-nodes-base.code", {"jsCode": JS_PARSE_ENRICH}, 2, x, 300)); x += 240
@@ -432,6 +477,30 @@ def build(archetype: str) -> dict:
     C("Live Writes?", "Create Doc", so=1)
     C("Create Doc", "Insert Doc Body")
 
+    # optional PDF: export the created Google Doc to PDF (no new service) and drop it in the folder
+    next_after_doc = "Build ATS Lookup" if archetype == "A3" else "Append Screen Row"
+    nodes.append(node("Deliver PDF?", "n8n-nodes-base.if", {
+        "conditions": {"options": {"caseSensitive": True, "typeValidation": "loose", "version": 2},
+                       "conditions": [{"id": nid("c-pdf"), "leftValue": "={{ $('Set Config').item.json.deliver_pdf }}", "rightValue": True,
+                                       "operator": {"type": "boolean", "operation": "true", "singleValue": True}}],
+                       "combinator": "and"}, "options": {}}, 2.3, lx + 240, 640))
+    nodes.append(node("Export Doc as PDF", "n8n-nodes-base.googleDrive", {
+        "operation": "download",
+        "fileId": {"__rl": True, "mode": "id", "value": "={{ $('Create Doc').item.json.id }}"},
+        "options": {"googleFileConversion": {"conversion": {"docsToFormat": "application/pdf"}}}},
+        3, lx + 480, 640, creds=CRED["drive"]))
+    nodes.append(node("Save PDF to Drive", "n8n-nodes-base.googleDrive", {
+        "operation": "upload",
+        "name": "={{ $('Format Screen (FORMAT)').item.json.doc_title }}.pdf",
+        "driveId": {"__rl": True, "mode": "list", "value": "My Drive"},
+        "folderId": {"__rl": True, "mode": "id", "value": "={{ $('Set Config').item.json.drive_folder_id }}"},
+        "inputDataFieldName": "data", "options": {}}, 3, lx + 720, 640, creds=CRED["drive"]))
+    C("Insert Doc Body", "Deliver PDF?")
+    C("Deliver PDF?", "Export Doc as PDF", so=0)          # true -> export + save PDF
+    C("Deliver PDF?", next_after_doc, so=1)               # false -> continue
+    C("Export Doc as PDF", "Save PDF to Drive")
+    C("Save PDF to Drive", next_after_doc)
+
     if archetype == "A3":
         # ATS lookup + note between Insert Doc Body and the sheet/slack
         nodes.append(node("Build ATS Lookup", "n8n-nodes-base.code", {"jsCode": JS_BUILD_ATS_LOOKUP}, 2, lx + 480, 420))
@@ -456,7 +525,6 @@ def build(archetype: str) -> dict:
             "options": {"timeout": 30000}}, 4.4, lx + 1680, 300, creds=CRED["ats"]))
         sink = sheet_and_slack(lx + 1920, 420)
         nodes += sink
-        C("Insert Doc Body", "Build ATS Lookup")
         C("Build ATS Lookup", "ATS Find Candidate")
         C("ATS Find Candidate", "Parse Candidate")
         C("Parse Candidate", "Found in ATS?")
@@ -468,7 +536,6 @@ def build(archetype: str) -> dict:
     else:
         sink = sheet_and_slack(lx + 480, 420)
         nodes += sink
-        C("Insert Doc Body", "Append Screen Row")
         C("Append Screen Row", "Slack Notify")
 
     enodes, econns = error_branch(wf_name)

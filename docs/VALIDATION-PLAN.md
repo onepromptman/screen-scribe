@@ -56,7 +56,7 @@ For each archetype, with `TEST_MODE=true`:
 2. Confirm SOURCE loads the sample notes.
 3. Confirm RESOLVE emits an identity object (A2/A3).
 4. Confirm ENRICH returns schema-valid structured output (A2/A3). If the model is
-   unreachable, confirm `USE_MODEL=false` still produces a formatted result.
+   unreachable, confirm `enrichment_level=off` still produces a formatted result.
 5. Confirm FORMAT renders the template into `doc_body_markdown`.
 6. Confirm the SINK is skipped and the Dry Run Preview shows the intended writes.
    For A3, confirm the preview shows the exact ATS request (URL, method, body) for

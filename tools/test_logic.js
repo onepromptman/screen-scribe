@@ -96,5 +96,35 @@ console.log('== Format fallback (no model / A1 path) ==');
   check(out.doc_body_markdown.includes('Jordan Rivera'), 'fallback uses candidate from config');
 }
 
+// ---- enrichment level -> directive (low/medium/high, default on unknown) ----
+console.log('== enrichment level directive ==');
+{
+  const base = setConfigOut(A3);
+  for (const [lvl, marker] of [['low', 'LOW'], ['medium', 'MEDIUM'], ['high', 'HIGH'], ['weird', 'MEDIUM']]) {
+    const cfg = { ...base, enrichment_level: lvl };
+    const store = { 'Set Config': cfg };
+    const fetched = runCode(codeOf(A3, 'Fetch Notes (SOURCE)'), cfg, store);
+    const resolved = runCode(codeOf(A3, 'Resolve Context (RESOLVE)'), fetched, store);
+    check(resolved.enrichment_directive && resolved.enrichment_directive.includes(marker),
+          'enrichment_level ' + lvl + ' -> ' + marker + ' directive');
+  }
+}
+
+// ---- resume merge (extracted text folds into candidate.resume_text, fail-open) ----
+console.log('== merge resume ==');
+{
+  const base = setConfigOut(A3);
+  const store = { 'Set Config': base };
+  const fetched = runCode(codeOf(A3, 'Fetch Notes (SOURCE)'), base, store);
+  const resolved = runCode(codeOf(A3, 'Resolve Context (RESOLVE)'), fetched, store);
+  store['Resolve Context (RESOLVE)'] = resolved;
+  const merged = runCode(codeOf(A3, 'Merge Resume'), { text: 'EXTRACTED RESUME TEXT' }, store);
+  check(merged.candidate && (merged.candidate.resume_text || '').includes('EXTRACTED RESUME TEXT'),
+        'merge resume folds extracted text into candidate.resume_text');
+  check(merged.enrichment_directive === resolved.enrichment_directive, 'merge resume preserves enrichment directive');
+  const merged2 = runCode(codeOf(A3, 'Merge Resume'), { text: '' }, store);
+  check(merged2.candidate.resume_text === null, 'merge resume fail-open: empty extraction leaves resume_text null');
+}
+
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

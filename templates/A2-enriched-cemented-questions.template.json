@@ -23,9 +23,9 @@
               "type": "boolean"
             },
             {
-              "id": "44c07beb779bc1593572d534aa1b5de6",
-              "name": "USE_MODEL",
-              "value": true,
+              "id": "8a7ef1dc165c6522a9f6c89d408682d6",
+              "name": "deliver_pdf",
+              "value": false,
               "type": "boolean"
             },
             {
@@ -95,6 +95,18 @@
               "type": "string"
             },
             {
+              "id": "980e51145108b5be535dabae25fc85af",
+              "name": "enrichment_level",
+              "value": "medium",
+              "type": "string"
+            },
+            {
+              "id": "97821426d6641919a8bfd7b6106895a1",
+              "name": "fetch_resume",
+              "value": false,
+              "type": "boolean"
+            },
+            {
               "id": "a973bbb385dbc1489dd371ca56fdacdd",
               "name": "standard_questions",
               "value": "[\n  {\n    \"id\": \"motivation\",\n    \"question\": \"Why is the candidate interested in this role and company right now?\",\n    \"guidance\": \"Look for a specific, credible reason tied to the role, not a generic 'looking for growth'.\"\n  },\n  {\n    \"id\": \"role_fit\",\n    \"question\": \"How well does the candidate's background map to the core responsibilities of this role?\",\n    \"guidance\": \"Map concrete past work to the role's must-do outcomes. Adjacent experience counts if the underlying skill transfers.\"\n  },\n  {\n    \"id\": \"experience_depth\",\n    \"question\": \"What is the depth and scope of the candidate's most relevant experience?\",\n    \"guidance\": \"Scope, ownership, and outcomes matter more than titles or tenure length.\"\n  },\n  {\n    \"id\": \"comp_expectations\",\n    \"question\": \"What are the candidate's compensation expectations, and are they within band?\",\n    \"guidance\": \"Capture the number or range if the notes have it; flag if materially above the role band.\"\n  },\n  {\n    \"id\": \"availability\",\n    \"question\": \"What is the candidate's availability and notice period?\",\n    \"guidance\": \"Start date, notice period, competing processes, and urgency.\"\n  },\n  {\n    \"id\": \"location_workauth\",\n    \"question\": \"What is the candidate's location and work authorization status?\",\n    \"guidance\": \"Onsite/hybrid/remote fit, relocation willingness, and any sponsorship need.\"\n  },\n  {\n    \"id\": \"logistics\",\n    \"question\": \"Any logistics or process notes the next interviewer should know?\",\n    \"guidance\": \"Scheduling constraints, interview format preferences, accommodations, referral source.\"\n  },\n  {\n    \"id\": \"red_flags\",\n    \"question\": \"Are there any concerns or red flags from the conversation?\",\n    \"guidance\": \"Inconsistencies, communication issues, misaligned expectations. Absence of red flags is a valid answer.\"\n  }\n]",
@@ -129,7 +141,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// RESOLVE: derive candidate identity + enrichment inputs.\n// Production: parse the calendar invite attendee email / LinkedIn, or read a\n// resume dropped in Slack, and append to candidate.resume_text.\nconst j = $input.first().json;\nconst candidate = {\n  name: j.candidate_name || '',\n  email: (j.candidate_email || '').toLowerCase().trim(),\n  role: j.candidate_role || '',\n  linkedin_url: j.candidate_linkedin || null,\n  resume_text: j.candidate_resume_text || null,\n  resume_link: j.candidate_resume_link || null,\n};\nreturn { json: { ...j, candidate } };\n"
+        "jsCode": "// RESOLVE: derive candidate identity + enrichment inputs, and pick the\n// enrichment directive from enrichment_level (off/low/medium/high).\n// Production: parse the calendar invite attendee email / LinkedIn / resume link,\n// or read a resume dropped in Slack, and append to candidate.resume_text.\nconst j = $input.first().json;\nconst candidate = {\n  name: j.candidate_name || '',\n  email: (j.candidate_email || '').toLowerCase().trim(),\n  role: j.candidate_role || '',\n  linkedin_url: j.candidate_linkedin || null,\n  resume_text: j.candidate_resume_text || null,\n  resume_link: j.candidate_resume_link || null,\n};\nconst LEVELS = {\n  low: 'ENRICHMENT LEVEL: LOW (extract-only). Report ONLY facts explicitly stated in the notes or provided context. Do NOT infer, suggest, rate, or fill gaps. For any question the notes do not directly address, set the answer to: Not covered in the screen, and confidence to low. Base the recommendation solely on stated facts; if there is not enough to judge, use the maybe tier.',\n  medium: 'ENRICHMENT LEVEL: MEDIUM. Answer from the notes and provided context. Light inference is allowed only where the notes strongly imply it, and must be reflected in the evidence field. Never invent specifics. Provide a confidence rating on every answer.',\n  high: 'ENRICHMENT LEVEL: HIGH. Answer from the notes and context, synthesize across them, and infer where reasonable - but ground every inference in evidence and never fabricate specifics. Suggest follow-up questions and give a clear overall read.',\n};\nconst level = (j.enrichment_level || 'medium').toLowerCase();\nconst enrichment_directive = LEVELS[level] || LEVELS.medium;\nreturn { json: { ...j, candidate, enrichment_level: level, enrichment_directive } };\n"
       },
       "id": "4dcbd0c11a0ab6c911b9366e741796eb",
       "name": "Resolve Context (RESOLVE)",
@@ -150,13 +162,103 @@
           },
           "conditions": [
             {
-              "id": "0955f80f338651a5cc664fdb42b88bc9",
-              "leftValue": "={{ $json.USE_MODEL }}",
+              "id": "5120ad70e5fd61a4dea72595b0ae747c",
+              "leftValue": "={{ $json.fetch_resume }}",
               "rightValue": true,
               "operator": {
                 "type": "boolean",
                 "operation": "true",
                 "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "35d4344a15b8ab896493746f3c325d53",
+      "name": "Fetch Resume?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        720,
+        700
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "download",
+        "fileId": {
+          "__rl": true,
+          "mode": "url",
+          "value": "={{ $('Resolve Context (RESOLVE)').item.json.candidate.resume_link }}"
+        },
+        "options": {
+          "googleFileConversion": {
+            "conversion": {
+              "docsToFormat": "application/pdf"
+            }
+          }
+        }
+      },
+      "id": "7855b49caaa9bb06de17ba694e30137c",
+      "name": "Download Resume",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        960,
+        700
+      ],
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "REPLACE_WITH_GOOGLEDRIVEOAUTH2API_CREDENTIAL_ID",
+          "name": "Google Drive OAuth2 API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "pdf",
+        "options": {}
+      },
+      "id": "4b658513c9b5b8c6349bee8d9eebb572",
+      "name": "Extract Resume Text",
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1,
+      "position": [
+        1200,
+        700
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Merge the extracted resume text into candidate.resume_text before ENRICH.\n// Fail-open: if extraction produced nothing, the context passes through unchanged.\nconst ctx = $('Resolve Context (RESOLVE)').first().json;\nconst extracted = (($input.first().json || {}).text || '').toString().trim();\nconst existing = (ctx.candidate && ctx.candidate.resume_text) || '';\nconst resume_text = [existing, extracted].filter(Boolean).join('\\n\\n') || null;\nreturn { json: { ...ctx, candidate: { ...ctx.candidate, resume_text } } };\n"
+      },
+      "id": "7b1f180c2c0029e8e6bf15e89362f1fb",
+      "name": "Merge Resume",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1440,
+        700
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "0955f80f338651a5cc664fdb42b88bc9",
+              "leftValue": "={{ $json.enrichment_level }}",
+              "rightValue": "off",
+              "operator": {
+                "type": "string",
+                "operation": "notEquals"
               }
             }
           ],
@@ -205,7 +307,7 @@
         "text": "=COMPANY CONTEXT:\n{{ $json.company_context }}\n\nROLE: {{ $json.candidate.role }}\nCANDIDATE: {{ $json.candidate.name }} <{{ $json.candidate.email }}>\nLINKEDIN: {{ $json.candidate.linkedin_url }}\nRESUME / EXTRA CONTEXT:\n{{ $json.candidate.resume_text || 'none provided' }}\n\nSTANDARD QUESTIONS (answer every one, in order):\n{{ $json.standard_questions }}\n\nSCREEN NOTES:\n{{ $json.notes_text }}",
         "hasOutputParser": true,
         "options": {
-          "systemMessage": "You are a recruiting screen writer. You are given the notes from a recruiter screen, some candidate context, and a fixed list of standard screen questions. Your job is to answer EVERY standard question from the notes and context, then produce an overall read.\n\nRules:\n- Answer strictly from the notes and context. Do not invent facts. If the notes do not cover a question, set the answer to 'Not covered in the screen' and confidence to 'low'.\n- Keep the same question ids and order as given.\n- The recommendation tier is the source of truth; the score is just a sort key.\n- Be concise and specific. A hiring manager should be able to skim the summary.\n- Output must match the provided JSON schema exactly.",
+          "systemMessage": "=You are a recruiting screen writer. You are given the notes from a recruiter screen, some candidate context, and a fixed list of standard screen questions. Your job is to answer EVERY standard question from the notes and context, then produce an overall read.\n\nRules:\n- Answer strictly from the notes and context. Do not invent facts. If the notes do not cover a question, set the answer to 'Not covered in the screen' and confidence to 'low'.\n- Keep the same question ids and order as given.\n- The recommendation tier is the source of truth; the score is just a sort key.\n- Be concise and specific. A hiring manager should be able to skim the summary.\n- Output must match the provided JSON schema exactly.\n\n{{ $json.enrichment_directive }}",
           "maxIterations": 3
         }
       },
@@ -247,7 +349,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// FORMAT: render the structured output through the doc template (mustache-lite).\nconst cfg = $('Set Config').first().json;\nlet data = ($input.first().json || {}).enriched || null;\nif (!data) {\n  // A1 / USE_MODEL=false: deterministic minimal object from the notes.\n  const j = $input.first().json;\n  const candidate = j.candidate || {\n    name: cfg.candidate_name, email: cfg.candidate_email, role: cfg.candidate_role,\n    linkedin_url: cfg.candidate_linkedin, resume_link: null,\n  };\n  data = {\n    candidate,\n    screen_date: $now.toISODate(),\n    summary: (j.notes_text || '').split('\\n').filter(Boolean).slice(0, 3).join(' '),\n    standard_answers: [], strengths: [], concerns: [],\n    recommendation: 'maybe', follow_up_questions: [],\n    next_steps: 'Reviewer to add next steps.', raw_notes: j.notes_text,\n  };\n}\nfunction render(tpl, d) {\n  tpl = tpl.replace(/{{#([\\w.]+)}}([\\s\\S]*?){{\\/\\1}}/g, function (m, key, inner) {\n    const val = key.split('.').reduce(function (o, k) { return o == null ? undefined : o[k]; }, d);\n    if (Array.isArray(val)) {\n      return val.map(function (it) {\n        if (it !== null && typeof it === 'object') return render(inner, it);\n        return inner.replace(/{{\\.}}/g, it == null ? '' : String(it));\n      }).join('');\n    }\n    if (val) return render(inner, d);\n    return '';\n  });\n  tpl = tpl.replace(/{{([\\w.]+)}}/g, function (m, key) {\n    const val = key.split('.').reduce(function (o, k) { return o == null ? undefined : o[k]; }, d);\n    return val == null ? '' : String(val);\n  });\n  return tpl;\n}\nconst tpl = cfg.doc_template || '# {{candidate.name}}\\n\\n{{summary}}';\nlet body;\ntry { body = render(tpl, data); }\ncatch (e) { body = '# ' + ((data.candidate || {}).name || 'Screen') + '\\n\\n' + (data.summary || '') + '\\n\\n' + (data.raw_notes || ''); }\nconst cand = data.candidate || {};\nconst title = (cand.name || 'Candidate') + ' - ' + (cand.role || 'Screen') + ' - Recruiter Screen';\nreturn { json: { ...($input.first().json), doc_title: title, doc_body_markdown: body, screen_output: data } };\n"
+        "jsCode": "// FORMAT: render the structured output through the doc template (mustache-lite).\nconst cfg = $('Set Config').first().json;\nlet data = ($input.first().json || {}).enriched || null;\nif (!data) {\n  // A1 / enrichment off: deterministic minimal object from the notes.\n  const j = $input.first().json;\n  const candidate = j.candidate || {\n    name: cfg.candidate_name, email: cfg.candidate_email, role: cfg.candidate_role,\n    linkedin_url: cfg.candidate_linkedin, resume_link: null,\n  };\n  data = {\n    candidate,\n    screen_date: $now.toISODate(),\n    summary: (j.notes_text || '').split('\\n').filter(Boolean).slice(0, 3).join(' '),\n    standard_answers: [], strengths: [], concerns: [],\n    recommendation: 'maybe', follow_up_questions: [],\n    next_steps: 'Reviewer to add next steps.', raw_notes: j.notes_text,\n  };\n}\nfunction render(tpl, d) {\n  tpl = tpl.replace(/{{#([\\w.]+)}}([\\s\\S]*?){{\\/\\1}}/g, function (m, key, inner) {\n    const val = key.split('.').reduce(function (o, k) { return o == null ? undefined : o[k]; }, d);\n    if (Array.isArray(val)) {\n      return val.map(function (it) {\n        if (it !== null && typeof it === 'object') return render(inner, it);\n        return inner.replace(/{{\\.}}/g, it == null ? '' : String(it));\n      }).join('');\n    }\n    if (val) return render(inner, d);\n    return '';\n  });\n  tpl = tpl.replace(/{{([\\w.]+)}}/g, function (m, key) {\n    const val = key.split('.').reduce(function (o, k) { return o == null ? undefined : o[k]; }, d);\n    return val == null ? '' : String(val);\n  });\n  return tpl;\n}\nconst tpl = cfg.doc_template || '# {{candidate.name}}\\n\\n{{summary}}';\nlet body;\ntry { body = render(tpl, data); }\ncatch (e) { body = '# ' + ((data.candidate || {}).name || 'Screen') + '\\n\\n' + (data.summary || '') + '\\n\\n' + (data.raw_notes || ''); }\nconst cand = data.candidate || {};\nconst title = (cand.name || 'Candidate') + ' - ' + (cand.role || 'Screen') + ' - Recruiter Screen';\nreturn { json: { ...($input.first().json), doc_title: title, doc_body_markdown: body, screen_output: data } };\n"
       },
       "id": "f2594dde283a1c36ca06717690ec327c",
       "name": "Format Screen (FORMAT)",
@@ -293,7 +395,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// TEST_MODE preview: show what WOULD be written; nothing is sent.\nconst j = $input.first().json;\nreturn { json: {\n  dry_run: true,\n  would_create_doc: { title: j.doc_title, folder_id: j.drive_folder_id },\n  would_insert_body_chars: (j.doc_body_markdown || '').length,\n  would_append_sheet_row: {\n    sheet_id: j.sheet_id, tab: j.sheet_tab,\n    candidate: (j.screen_output && j.screen_output.candidate) || null,\n    recommendation: j.screen_output && j.screen_output.recommendation,\n  },\n  doc_body_preview: (j.doc_body_markdown || '').slice(0, 1200),\n} };\n"
+        "jsCode": "// TEST_MODE preview: show what WOULD be written; nothing is sent.\nconst j = $input.first().json;\nreturn { json: {\n  dry_run: true,\n  would_create_doc: { title: j.doc_title, folder_id: j.drive_folder_id },\n  would_insert_body_chars: (j.doc_body_markdown || '').length,\n  would_deliver_pdf: !!j.deliver_pdf,\n  would_append_sheet_row: {\n    sheet_id: j.sheet_id, tab: j.sheet_tab,\n    candidate: (j.screen_output && j.screen_output.candidate) || null,\n    recommendation: j.screen_output && j.screen_output.recommendation,\n  },\n  doc_body_preview: (j.doc_body_markdown || '').slice(0, 1200),\n} };\n"
       },
       "id": "432905445fae88e53b33194e21c189b6",
       "name": "Dry Run Preview",
@@ -354,6 +456,102 @@
         "googleDocsOAuth2Api": {
           "id": "REPLACE_WITH_GOOGLEDOCSOAUTH2API_CREDENTIAL_ID",
           "name": "Google Docs OAuth2 API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "66cf96c9e1f9d0415ca85466f584f289",
+              "leftValue": "={{ $('Set Config').item.json.deliver_pdf }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "dec436dc37278acadddf5dbc2536393d",
+      "name": "Deliver PDF?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        2400,
+        640
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "download",
+        "fileId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $('Create Doc').item.json.id }}"
+        },
+        "options": {
+          "googleFileConversion": {
+            "conversion": {
+              "docsToFormat": "application/pdf"
+            }
+          }
+        }
+      },
+      "id": "c4c63a22b37d2a382aee161d4b4310f5",
+      "name": "Export Doc as PDF",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        2640,
+        640
+      ],
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "REPLACE_WITH_GOOGLEDRIVEOAUTH2API_CREDENTIAL_ID",
+          "name": "Google Drive OAuth2 API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "upload",
+        "name": "={{ $('Format Screen (FORMAT)').item.json.doc_title }}.pdf",
+        "driveId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "My Drive"
+        },
+        "folderId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $('Set Config').item.json.drive_folder_id }}"
+        },
+        "inputDataFieldName": "data",
+        "options": {}
+      },
+      "id": "a08d1aaef90c4af4d90a2af152c88212",
+      "name": "Save PDF to Drive",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        2880,
+        640
+      ],
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "REPLACE_WITH_GOOGLEDRIVEOAUTH2API_CREDENTIAL_ID",
+          "name": "Google Drive OAuth2 API"
         }
       }
     },
@@ -596,6 +794,57 @@
       "main": [
         [
           {
+            "node": "Fetch Resume?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Resume?": {
+      "main": [
+        [
+          {
+            "node": "Download Resume",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Use Model?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download Resume": {
+      "main": [
+        [
+          {
+            "node": "Extract Resume Text",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Resume Text": {
+      "main": [
+        [
+          {
+            "node": "Merge Resume",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge Resume": {
+      "main": [
+        [
+          {
             "node": "Use Model?",
             "type": "main",
             "index": 0
@@ -706,6 +955,46 @@
       ]
     },
     "Insert Doc Body": {
+      "main": [
+        [
+          {
+            "node": "Deliver PDF?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Deliver PDF?": {
+      "main": [
+        [
+          {
+            "node": "Export Doc as PDF",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Append Screen Row",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Export Doc as PDF": {
+      "main": [
+        [
+          {
+            "node": "Save PDF to Drive",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save PDF to Drive": {
       "main": [
         [
           {

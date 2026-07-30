@@ -68,14 +68,21 @@ production, replace the trigger with one that fires when a screen finishes:
 After swapping the trigger, point the `Fetch Notes (SOURCE)` node at the trigger's
 output field. It already handles the TEST_MODE sample path, so leave that branch.
 
-## 5. Choose the model (or none)
+## 5. Choose the model and how far it infers
 
 - Default is Anthropic via the `Enrich Model` node. To use Gemini or OpenAI,
   replace that one node with the matching model node and attach its credential.
   Nothing else changes; the agent and parser are model-agnostic.
-- Set `USE_MODEL=false` in `Set Config` to skip enrichment entirely and format the
-  raw notes deterministically. This is also the automatic fallback if enrichment
-  fails.
+- Set `enrichment_level` in `Set Config` to control how much the AI does:
+  - `off` — skip enrichment entirely, format the raw notes deterministically
+    (also the automatic fallback if the model fails).
+  - `low` — extract-only: report just what the notes say, no inference, no
+    ratings, "Not covered" where the notes are silent. For teams that don't want
+    AI inferring anything about candidates.
+  - `medium` (default) — answer the questions with light inference, allowed only
+    where the notes strongly imply it and always reflected in the evidence field.
+  - `high` — full synthesis: infer where reasonable (grounded in evidence),
+    suggest follow-ups, give an overall read.
 
 ## 6. Wire your destination (SINK)
 
@@ -88,18 +95,33 @@ Defaults are a Google Doc plus a row appended to a Sheet tab. To change:
 - ATS note (A3): set `ats_provider` and attach the ATS Basic-auth credential. See
   `docs/ARCHITECTURE.md` and `docs/integrations/ashby.md` for the exact
   request shapes.
+- Also deliver a PDF: set `deliver_pdf=true`. After the Google Doc is created, the
+  `Export Doc as PDF` step exports it (via Google Drive, no extra service) and
+  `Save PDF to Drive` drops it in the same folder. To attach it to an email or the
+  ATS instead, rewire `Save PDF to Drive` to your delivery node (its binary output
+  is the PDF). Needs a `googleDriveOAuth2Api` credential.
 
 ## 7. Add candidate context (A2/A3)
 
 RESOLVE gathers identity and enrichment inputs. Out of the box it reads fields you
-set (email, name, role) and any resume text pasted in. To enrich automatically:
+set (email, name, role) and any resume text pasted in.
 
-- From the calendar invite: parse the attendee email and any LinkedIn URL in the
-  description in `Resolve Context`.
-- From Slack: let a recruiter drop a resume file referencing the candidate; add a
-  branch that reads the file and appends its text to `candidate.resume_text`.
-- From the ATS (A3): the `ATS Find Candidate` step already looks the candidate up
-  by email and can pull the resume link.
+**Auto-pull the resume (built in).** Set `fetch_resume=true` and put a Drive file
+link in `candidate_resume_link`. The `Fetch Resume?` branch downloads the file,
+`Extract Resume Text` pulls the text (PDF by default — switch that node's operation
+for DOCX), and `Merge Resume` folds it into `candidate.resume_text` before ENRICH.
+It fails open: if the file is missing or empty, the screen still ships. Where the
+link comes from is up to your SOURCE:
+
+- From the calendar invite: a Google Calendar trigger exposes the event
+  description and attachments — parse the Drive link into `candidate_resume_link`.
+- From the ATS (A3): the `ATS Find Candidate` step looks the candidate up by email;
+  extend it to read the candidate's resume URL into `candidate_resume_link`.
+- From Slack: let a recruiter drop the resume file and set the link.
+
+LinkedIn: capturing the profile URL is free; turning it into content needs a
+third-party enrichment API, and scraping profiles may violate LinkedIn's terms —
+check your policy first.
 
 ## Safety rails
 

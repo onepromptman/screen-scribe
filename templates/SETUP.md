@@ -24,6 +24,7 @@ so there are no workflow-id references to rewire on import.
 | `slackOAuth2Api` | Slack Notify, Alert Error to Slack | A1, A2, A3 |
 | `anthropicApi` | Enrich Model | A2, A3 |
 | `httpBasicAuth` (ATS key as username, blank password) | ATS Find Candidate, ATS Add Note | A3 |
+| `googleDriveOAuth2Api` | Export Doc as PDF, Save PDF to Drive (if `deliver_pdf`); Download Resume (A2/A3, if `fetch_resume`) | A1, A2, A3 (optional) |
 
 For A3 you create one `httpBasicAuth` credential holding your Ashby **or** Lever
 API key (key = username, password blank). See `docs/integrations/ashby.md`
@@ -34,10 +35,12 @@ and `docs/integrations/lever.md`.
 | Field | Set to |
 |---|---|
 | `TEST_MODE` | `true` while testing; `false` to write for real |
-| `USE_MODEL` | `true` to run enrichment (A2/A3); `false` for deterministic formatting |
+| `enrichment_level` | `off` / `low` / `medium` / `high` (A2/A3). `off` = deterministic, no model. `low` = extract-only, no inference or ratings. `medium` (default) = light evidence-flagged inference. `high` = full synthesis + suggestions. |
+| `deliver_pdf` | `true` to also export the finished Google Doc to PDF and save it in the Drive folder |
+| `fetch_resume` | `true` to download a resume from `candidate_resume_link` and feed its text to enrichment (A2/A3) |
 | `company_context` | A short description of your company/role for the enrichment prompt |
 | `sample_notes` | Fictional notes used only when TEST_MODE and no real trigger fired |
-| `candidate_*` | Test candidate identity; production comes from SOURCE/RESOLVE |
+| `candidate_*` | Test candidate identity, incl. `candidate_resume_link` for the resume fetch; production comes from SOURCE/RESOLVE |
 | `drive_folder_id` | Google Drive folder id where the screen doc is created |
 | `sheet_id` / `sheet_tab` | Sheet id and tab name for the log row (tab defaults to `Screens`) |
 | `standard_questions` | The cemented questions (baked from config/standard-questions.json) |
@@ -48,9 +51,9 @@ and `docs/integrations/lever.md`.
 
 | Template | Credentials | Nodes |
 |---|---|---|
-| A1-minimal-screen-to-doc | googleDocsOAuth2Api, googleSheetsOAuth2Api, slackOAuth2Api | 14 |
-| A2-enriched-cemented-questions | + anthropicApi | 20 |
-| A3-endtoend-ats | + httpBasicAuth (ATS) | 26 |
+| A1-minimal-screen-to-doc | googleDocsOAuth2Api, googleSheetsOAuth2Api, slackOAuth2Api (+ googleDriveOAuth2Api if `deliver_pdf`) | 17 |
+| A2-enriched-cemented-questions | + anthropicApi (+ googleDriveOAuth2Api if `fetch_resume`) | 27 |
+| A3-endtoend-ats | + httpBasicAuth (ATS) | 33 |
 
 ## Before activating
 

@@ -33,7 +33,11 @@ shape, in the same place, without anyone retyping anything.
 4. *(A2 and A3 only)* **An AI agent reads the notes and answers your fixed list
    of screen questions** — the questions you've decided every candidate should
    be evaluated against — pulling only what's actually in the notes. Nothing
-   invented; anything the notes didn't cover comes back marked as such.
+   invented; anything the notes didn't cover comes back marked as such. You
+   control how far it goes with `enrichment_level`: `low` extracts only what was
+   said (no inference), `medium` allows light evidence-backed inference, `high`
+   synthesizes and suggests — or `off` to skip the model entirely. It can also
+   auto-pull the candidate's resume (`fetch_resume`) and feed it to the answers.
 5. **The finished writeup gets delivered** wherever your team actually looks:
    a Google Doc, a row in a tracking sheet, an email, and — for A3 — a note on
    the candidate's own record in Ashby or Lever, no copy-paste required.
@@ -117,6 +121,11 @@ Every screen produces the same document shape:
 Change any of it in `config/screen-doc.template.md` (layout) and
 `config/output-schema.json` (content).
 
+Delivered as a Google Doc plus a Sheet row by default. Flip `deliver_pdf` on to
+also export the Doc to PDF and drop it in the Drive folder (no extra service — it
+reuses the Doc you already created), and — for A3 — a note on the candidate's
+record in Ashby or Lever.
+
 ## Quickstart
 
 1. Read `docs/ARCHITECTURE.md` for the five-module spine and how to swap modules.
@@ -140,7 +149,9 @@ Change any of it in `config/screen-doc.template.md` (layout) and
 | What the writeup looks like | `config/screen-doc.template.md` |
 | Where notes come from | The SOURCE trigger node (see the ARCHITECTURE swap matrix) |
 | Which model runs enrichment | The `Enrich Model` node (Anthropic default; swap for Gemini/OpenAI) |
-| Model on or off | `USE_MODEL` in `Set Config` |
+| How much the AI infers | `enrichment_level` in `Set Config` (`off` / `low` / `medium` / `high`) |
+| Auto-pull the candidate's resume | `fetch_resume` + `candidate_resume_link` in `Set Config` (A2/A3) |
+| Also deliver a PDF | `deliver_pdf` in `Set Config` |
 | Which ATS (A3) | `ats_provider` in `Set Config` (`ashby` or `lever`) |
 
 ## Extensions (ideas, not built in)
@@ -149,12 +160,13 @@ The pack deliberately ships lean — notes in, writeup out. These are the natura
 next steps people ask for. **None of them are included**; each is a note on where
 it would attach if you want to build it.
 
-**Feed the AI more than just the notes** — richer input, better writeup:
+**Feed the AI more than just the notes** — richer input, better writeup. (Resume
+auto-pull already ships — set `fetch_resume` + `candidate_resume_link`; see
+`docs/CUSTOMIZE.md` §7.)
 
 | Extension | Where it attaches | Notes |
 |---|---|---|
-| **Upload a resume** | `Resolve Context` (RESOLVE) — append the text to `candidate.resume_text` | Drop the file in Drive or Slack, extract text, and the AI answers role-fit and experience-depth against the actual résumé instead of just what came up on the call. Highest-value addition, lowest effort. |
-| **LinkedIn profile enrichment** | Same place — a scraping/enrichment API (Bright Data, Proxycurl, etc.) called before ENRICH | Pass the profile URL, fold the returned history into `candidate.resume_text`. Check the provider's terms and your own policy before scraping profiles. |
+| **LinkedIn profile enrichment** | `Resolve Context` (RESOLVE) — a scraping/enrichment API (Bright Data, Proxycurl, etc.) called before ENRICH | Capturing the profile URL is free; turning it into content needs a third-party API. Check the provider's terms and your own policy before scraping profiles. |
 | **The job description itself** | `Set Config` → inject into the enrichment prompt alongside `company_context` | Turns "does this map to the role?" from a judgment call into a comparison against the actual req. |
 | **Prior interview notes** | RESOLVE, pulled from your ATS by candidate email | Lets the writeup reference what earlier rounds already established. |
 

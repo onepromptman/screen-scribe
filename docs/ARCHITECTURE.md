@@ -26,10 +26,10 @@ SOURCE  ->  RESOLVE  ->  ENRICH  ->  FORMAT  ->  SINK
 | Stage | Job | Default | Swap to |
 |---|---|---|---|
 | 1. SOURCE | Trigger on a finished screen and load the notes text plus meeting metadata | Manual/Test trigger with pasted notes; production swap is a Gmail trigger on the notetaker email or a Drive folder watch | OneDrive, local folder, calendar-event-ended, chat/Slack command |
-| 2. RESOLVE | Derive candidate identity and enrichment inputs | Fields from the calendar invite (attendee email) plus anything pasted; optional resume dropped in Slack | Email lookup, ATS lookup by email (A3) |
+| 2. RESOLVE | Derive candidate identity and enrichment inputs | Fields from the calendar invite (attendee email) plus anything pasted; an optional resume auto-downloaded from `candidate_resume_link` (`fetch_resume`) | Email lookup, ATS lookup by email (A3), LinkedIn enrichment API |
 | 3. ENRICH | Turn notes plus context plus the cemented questions into structured output | n8n AI Agent + Anthropic model + structured output parser | Any model (Gemini/OpenAI by swapping the model node), or template-only (no model) |
 | 4. FORMAT | Render the structured output through a user template | Markdown/Google Doc template (config/screen-doc.template.md) | Doc tab, email body, ATS note body |
-| 5. SINK | Deliver to the destination | Google Doc + a row appended to a Sheet tab (the v1 behavior) | Email, Doc tab, ATS candidate note (Ashby/Lever) |
+| 5. SINK | Deliver to the destination | Google Doc + a row appended to a Sheet tab; an optional PDF export dropped in the Drive folder (`deliver_pdf`) | Email, Doc tab, ATS candidate note (Ashby/Lever) |
 
 ### Why the notes come from an AI notetaker, not a transcript
 
@@ -69,12 +69,15 @@ schema. The template is filled from that structured output.
 
 ```
 Manual/Test Trigger -> Set Config -> Fetch Notes (SOURCE)
-  -> Resolve Context (RESOLVE: identity + optional resume/LinkedIn)
-  -> Use Model? (USE_MODEL gate)
+  -> Resolve Context (RESOLVE: identity + enrichment inputs)
+  -> Fetch Resume? (optional: Download Resume -> Extract Resume Text -> Merge Resume)
+  -> Use Model? (enrichment_level gate; off -> deterministic passthrough)
        true  -> Enrich Model + AI Enrich (agent) + Structured Output Parser -> Parse Enrich Output
        false -> Passthrough (A1 behavior, fail-open)
   -> Format Screen (FORMAT, filled from structured output)
-  -> Live Writes? gate -> Create Doc -> Insert Doc Body -> Append Screen Row -> Slack Notify
+  -> Live Writes? gate -> Create Doc -> Insert Doc Body
+       -> Deliver PDF? (optional: Export Doc as PDF -> Save PDF to Drive)
+       -> Append Screen Row -> Slack Notify
   [Error branch]
 ```
 
@@ -89,15 +92,14 @@ Greenhouse is deliberately out of scope because it does not allow scorecard
 writes over the API (the note path exists but the pack targets Ashby/Lever).
 
 ```
-... A2 up to Parse Enrich Output ...
-  -> Build ATS Lookup (provider switch: ashby|lever) -> ATS Find Candidate (httpRequest)
-  -> Parse Candidate (candidate_id)
-  -> Format Screen (FORMAT)
-  -> Live Writes? gate
+... A2 up to Parse Enrich Output, then Format Screen (FORMAT) ...
+  -> Live Writes? (TEST_MODE gate)
+       true (TEST_MODE) -> Dry Run Preview (shows the exact writes + ATS request, nothing sent)
        false -> Create Doc -> Insert Doc Body
-                -> Build ATS Note (provider switch) -> ATS Add Note (httpRequest)
+                -> Deliver PDF? (optional: Export Doc as PDF -> Save PDF to Drive)
+                -> Build ATS Lookup (provider switch: ashby|lever) -> ATS Find Candidate
+                -> Parse Candidate -> Found in ATS? -> Build ATS Note -> ATS Add Note
                 -> Append Screen Row -> Slack Notify
-       true  -> Dry Run Preview (shows the exact ATS request that would be sent)
   [Error branch]
 ```
 
@@ -132,7 +134,9 @@ fields. Placeholders in `{{ }}` map to the output schema.
 | Flag | Meaning |
 |---|---|
 | `TEST_MODE` | true = dry run, no external writes; the SINK is replaced by a preview of what would be written |
-| `USE_MODEL` | true = run the AI Agent enrichment; false = deterministic template-only (also the fail-open fallback) |
+| `enrichment_level` | `off` = deterministic template-only (also the fail-open fallback); `low` = extract-only, no inference or ratings; `medium` = light evidence-flagged inference (default); `high` = full synthesis + suggestions |
+| `fetch_resume` | true = download the resume at `candidate_resume_link`, extract its text, and feed it to enrichment (A2/A3) |
+| `deliver_pdf` | true = export the finished Google Doc to PDF and drop it in the Drive folder |
 | `company_context` | Placeholder org description injected into the enrichment prompt |
 | `ats_provider` | `ashby` or `lever` (A3) |
 | source/sink ids | Drive folder id, Sheet id, Sheet tab name, doc template id |
@@ -152,9 +156,10 @@ not ripple:
 
 - The ENRICH agent uses a structured output parser, so malformed model output is
   retried against the schema rather than passed downstream.
-- `USE_MODEL=false` is a genuine fallback path: if the model is unavailable or you
-  do not want it, the pack degrades to deterministic formatting and still ships a
-  doc. Enrichment failure never blocks delivery.
+- `enrichment_level=off` is a genuine fallback path: if the model is unavailable or
+  you do not want it, the pack degrades to deterministic formatting and still ships
+  a doc. Enrichment failure never blocks delivery. `low` keeps the model but bars
+  inference, reporting only what the notes actually say.
 - Every workflow carries a built-in error branch (Error Trigger -> log to a Sheet
   -> alert Slack), so failures are captured and surfaced instead of lost.
 - `TEST_MODE` makes the whole pipeline safe to run before any credential or id is
