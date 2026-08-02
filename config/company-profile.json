@@ -1,0 +1,42 @@
+{
+  "description": "Everything company-specific about the analyst report lives here. This is the ONLY file you edit to point the analyst profile at your own organization — the prompt, the schema, and the Word renderer all read from it. Nothing downstream hardcodes a company name, a work policy, or a jurisdiction. Ships filled in with a fictional example so the renderer runs out of the box; replace every value under `company`, `work_policy`, and `jurisdiction` with your own.",
+  "version": 1,
+
+  "company": {
+    "name": "Northwind Robotics",
+    "short_name": "Northwind",
+    "industry": "a hardware company building autonomous warehouse robots",
+    "location": "San Francisco, CA",
+    "context": "Northwind Robotics builds autonomous warehouse robots. Series B, 140 people, hardware and software under one roof. A strong hire here has shipped physical product on a real schedule and is comfortable owning a subsystem end to end rather than specializing narrowly."
+  },
+
+  "work_policy": {
+    "label": "mandatory 5-day-per-week onsite",
+    "detail": "All employees work onsite five days per week at the San Francisco office. There is no hybrid or remote arrangement for this role.",
+    "negotiable": false,
+    "confirm_with_every_candidate": true
+  },
+
+  "regulatory": {
+    "regimes": [],
+    "_regimes_example": ["ITAR", "EAR", "FedRAMP", "HIPAA"],
+    "note": "Optional. Any clearance, citizenship, or export-control constraint that legitimately applies to the role. Leave `regimes` empty if none apply. Read docs/COMPLIANCE.md before adding one — export-control screening is narrowly permitted and is NOT a licence to ask about national origin."
+  },
+
+  "jurisdiction": {
+    "country": "US",
+    "federal_framework": ["Title VII", "ADA", "ADEA", "GINA", "EPA"],
+    "state": "California",
+    "state_framework": ["FEHA"],
+    "salary_history_ban": true,
+    "notes": "Drives which protected characteristics the compliance scrub enforces. Set `state` to null and `state_framework` to [] for federal-only screening."
+  },
+
+  "report": {
+    "title": "Talent Intelligence Report",
+    "analyst_persona": "Talent Intelligence Analyst",
+    "recommendation_placeholder": "PLEASE TYPE 1-2 SENTENCES ABOUT YOUR ASSESSMENT OF THE CANDIDATE HERE",
+    "accent_color": "4F2CC8",
+    "confidential_footer": true
+  }
+}

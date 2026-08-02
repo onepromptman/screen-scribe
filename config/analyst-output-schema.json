@@ -1,0 +1,175 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Talent Intelligence Report",
+  "description": "The structured shape the ENRICH stage produces when running the analyst profile (as opposed to the lighter screen-writeup profile in output-schema.json). The FORMAT stage renders this into a professionally templated .docx via tools/render_docx.js. Section numbering matches config/analyst-prompt.md.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["candidate_info", "qualifications", "compliance"],
+
+  "definitions": {
+    "sourced_field": {
+      "type": "object",
+      "description": "A candidate-information field plus where it came from. Provenance is required so the renderer can show what was confirmed on the call versus carried in from the ATS.",
+      "additionalProperties": false,
+      "required": ["value", "source"],
+      "properties": {
+        "value": {
+          "type": "string",
+          "description": "The extracted value, or the literal string UNKNOWN / INSUFFICIENT DATA. Never guess."
+        },
+        "source": {
+          "type": "string",
+          "enum": ["transcript", "ats", "config", "not_found"],
+          "description": "transcript = stated on the call; ats = carried in from the candidate record; config = supplied by the operator; not_found = neither the transcript nor the record covered it."
+        },
+        "quote": {
+          "type": ["string", "null"],
+          "description": "Verbatim supporting quote from the transcript when source is transcript."
+        }
+      }
+    }
+  },
+
+  "properties": {
+    "candidate_info": {
+      "type": "object",
+      "description": "Section 1. Every field is provenance-tracked; the renderer prints UNKNOWN rather than an empty cell so a reader can never mistake a gap for a negative.",
+      "additionalProperties": false,
+      "required": ["name", "current_location", "work_policy_confirmation", "salary_expectations", "availability"],
+      "properties": {
+        "name": { "$ref": "#/definitions/sourced_field" },
+        "role": { "$ref": "#/definitions/sourced_field" },
+        "screen_date": { "$ref": "#/definitions/sourced_field" },
+        "current_location": { "$ref": "#/definitions/sourced_field" },
+        "work_policy_confirmation": {
+          "allOf": [{ "$ref": "#/definitions/sourced_field" }],
+          "description": "The candidate's response to the work policy defined in config/company-profile.json, including any conditions or concerns they raised. Never summarize a hedge into a yes."
+        },
+        "salary_expectations": {
+          "allOf": [{ "$ref": "#/definitions/sourced_field" }],
+          "description": "Forward-looking expectations only. Salary HISTORY must never be recorded here even if the candidate volunteered it — route it to compliance.violations instead."
+        },
+        "availability": { "$ref": "#/definitions/sourced_field" }
+      }
+    },
+
+    "recruiter_recommendation": {
+      "type": ["string", "null"],
+      "description": "ALWAYS null on generation. The renderer prints the placeholder from company-profile.report.recommendation_placeholder so a human fills it in. The model must never populate this."
+    },
+
+    "qualifications": {
+      "type": "object",
+      "description": "Section 2.",
+      "additionalProperties": false,
+      "required": ["topics", "recruiting_background", "interview_highlights"],
+      "properties": {
+        "topics": {
+          "type": "array",
+          "minItems": 3,
+          "maxItems": 5,
+          "description": "3-5 major topic areas, each a bold heading plus a prose paragraph.",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["heading", "body"],
+            "properties": {
+              "heading": { "type": "string" },
+              "body": { "type": "string", "description": "Prose, not bullets. Include metrics wherever the transcript supplies them." }
+            }
+          }
+        },
+        "recruiting_background": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["job_search_situation", "motivation", "work_experience", "ownership_projects", "role_relevant_experience"],
+          "properties": {
+            "job_search_situation": { "type": "string" },
+            "motivation": { "type": "string" },
+            "work_experience": { "type": "string" },
+            "ownership_projects": { "type": "string" },
+            "role_relevant_experience": { "type": "string" }
+          }
+        },
+        "strategic_insights": {
+          "type": ["object", "null"],
+          "description": "Step 3 external research. Rendered under an [AI INSIGHT] tag. Null when no credible sources were found — never fabricate.",
+          "additionalProperties": false,
+          "required": ["summary", "sources"],
+          "properties": {
+            "summary": { "type": "string", "description": "Three sentences on employer trajectory overlapping the candidate's tenure: funding, M&A, launches, headcount changes." },
+            "sources": {
+              "type": "array",
+              "description": "1-2 verifiable sources per employer researched. An empty array forces the renderer to print the no-credible-sources notice.",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["employer", "claim", "url"],
+                "properties": {
+                  "employer": { "type": "string" },
+                  "claim": { "type": "string" },
+                  "url": { "type": "string" },
+                  "publisher": { "type": ["string", "null"] },
+                  "date": { "type": ["string", "null"] }
+                }
+              }
+            }
+          }
+        },
+        "interview_highlights": {
+          "type": "string",
+          "description": "Key takeaways on technical aptitude, motivation, and cultural alignment."
+        },
+        "risks": {
+          "type": "array",
+          "description": "Explicit risks only. Empty array means the renderer omits the subsection entirely rather than printing 'none'.",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["heading", "detail"],
+            "properties": {
+              "heading": { "type": "string" },
+              "detail": { "type": "string" }
+            }
+          }
+        }
+      }
+    },
+
+    "compliance": {
+      "type": "object",
+      "description": "Section 3. Populated by the Step 1 scrub, which runs BEFORE extraction so protected-characteristic content never reaches Sections 1 or 2.",
+      "additionalProperties": false,
+      "required": ["violations"],
+      "properties": {
+        "violations": {
+          "type": "array",
+          "description": "Every problematic question, logged regardless of intent. Empty array renders the explicit no-violations statement.",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["category", "question", "analysis"],
+            "properties": {
+              "category": {
+                "type": "string",
+                "description": "Protected characteristic or prohibited topic, e.g. 'National Origin', 'Salary History', 'Disability'. Must match a category id in config/legal-reference.json."
+              },
+              "question": { "type": "string", "description": "Exact quote from the transcript." },
+              "speaker": { "type": ["string", "null"], "enum": ["interviewer", "candidate", null] },
+              "analysis": { "type": "string", "description": "Why this is problematic and what the exposure is." },
+              "framework": {
+                "type": "array",
+                "description": "Which frameworks the item implicates, e.g. ['Title VII', 'FEHA'].",
+                "items": { "type": "string" }
+              }
+            }
+          }
+        },
+        "scrubbed_from_analysis": {
+          "type": "boolean",
+          "description": "True once the flagged content has been withheld from Sections 1 and 2. The renderer refuses to produce a document when violations exist and this is false."
+        }
+      }
+    }
+  }
+}

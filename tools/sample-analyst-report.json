@@ -1,0 +1,117 @@
+{
+  "candidate_info": {
+    "name": { "value": "Jordan Rivera", "source": "ats" },
+    "role": { "value": "Senior Robotics Engineer", "source": "ats" },
+    "screen_date": { "value": "2026-07-30", "source": "transcript" },
+    "current_location": {
+      "value": "Austin, TX",
+      "source": "transcript",
+      "quote": "I'm in Austin right now, been here about four years."
+    },
+    "work_policy_confirmation": {
+      "value": "Confirmed willing, with a relocation condition. Jordan can meet the 5-day onsite requirement but would need roughly eight weeks to relocate from Austin and asked whether relocation support is available.",
+      "source": "transcript",
+      "quote": "Five days onsite is fine — I'd just need about eight weeks to get out there, and I'd want to understand what relocation looks like."
+    },
+    "salary_expectations": {
+      "value": "$210,000 base, flexible on equity mix",
+      "source": "transcript",
+      "quote": "I'm targeting around 210 base, and I'm pretty flexible on how the equity is structured."
+    },
+    "availability": {
+      "value": "Available for panel interviews within two weeks; four-week notice period at current employer, so start date is roughly eight weeks out including relocation.",
+      "source": "transcript"
+    }
+  },
+
+  "recruiter_recommendation": null,
+
+  "qualifications": {
+    "topics": [
+      {
+        "heading": "Subsystem Ownership on Shipped Hardware",
+        "body": "Jordan currently owns the motion-control subsystem for a fleet of roughly 400 warehouse robots deployed across eleven customer sites. They described taking the subsystem from a prototype that required manual recalibration every 40 operating hours to a production system now running 900+ hours between interventions. The work spanned firmware, a controls rewrite, and the field-diagnostics tooling their support team uses — a scope that maps closely to how Northwind expects engineers to own a subsystem end to end rather than specialize narrowly."
+      },
+      {
+        "heading": "Incident Response and Field Debugging",
+        "body": "Asked to walk through a failure, Jordan described a fleet-wide fault where robots intermittently halted mid-aisle. They traced it across three layers — a timing assumption in the firmware, a retry loop that masked the symptom, and a warehouse Wi-Fi topology that made it look environmental — and shipped a fix in nine days while running a manual workaround for the customer. The account was specific, appropriately self-critical about the masking retry loop they had written themselves, and quantified throughout."
+      },
+      {
+        "heading": "Technical Depth Versus Formal Leadership",
+        "body": "Depth is strongest in embedded controls and systems debugging. Formal leadership is the thinner area: Jordan has mentored two junior engineers and run the subsystem's design reviews, but has never carried headcount or performance-management responsibility. They were direct about this rather than reframing mentorship as management, which is a positive signal on calibration even though the gap itself is real."
+      },
+      {
+        "heading": "Motivation and Search Context",
+        "body": "Jordan is running a deliberate, narrow search rather than responding to broad outreach — they named two other processes, both hardware companies at similar stage. The stated pull toward Northwind is scope: their current employer has grown to the point where the motion-control subsystem is being split across three teams, and Jordan wants to return to owning a whole system. That reason is specific and testable against what the role actually offers."
+      }
+    ],
+
+    "recruiting_background": {
+      "job_search_situation": "Actively interviewing but selectively — two other live processes, both hardware companies at Series B or C. Not under time pressure and not currently at offer stage with either.",
+      "motivation": "Wants to own a complete subsystem again. Their current employer is fragmenting motion control across three teams, which Jordan reads as a narrowing of scope. Came to Northwind through a former colleague rather than a job board.",
+      "work_experience": "Six years total. Four years at the current employer, a warehouse-automation company, most recently owning motion control for a ~400-robot production fleet. Two years prior at a mid-size industrial-automation firm working on conveyor control systems.",
+      "ownership_projects": "Motion-control subsystem, owned end to end: firmware, controls rewrite, and field-diagnostics tooling. Raised mean time between manual interventions from roughly 40 operating hours to over 900. Also built the diagnostics tooling now used by the support organization.",
+      "role_relevant_experience": "Direct overlap with the Northwind role on embedded controls, fleet-scale debugging, and hardware-software integration. The gap against the role brief is formal team leadership, which the role expects to grow into within the first year."
+    },
+
+    "strategic_insights": {
+      "summary": "Jordan's current employer raised a $75M Series C in March 2025 and expanded from roughly 180 to 320 employees over the following year, which is consistent with their account of the motion-control team being split across three groups. Their prior employer was acquired by a larger industrial-automation group in 2022, approximately six months after Jordan departed. Both companies were shipping physical product at fleet scale during Jordan's tenure, so the claimed production-hardware experience is credible on its face.",
+      "sources": [
+        {
+          "employer": "Current employer (warehouse automation)",
+          "claim": "$75M Series C, March 2025; headcount roughly 180 to 320 in the following year",
+          "url": "https://example.com/series-c-announcement",
+          "publisher": "Industry press",
+          "date": "2025-03"
+        },
+        {
+          "employer": "Prior employer (industrial automation)",
+          "claim": "Acquired by a larger industrial-automation group in 2022, about six months after the candidate departed",
+          "url": "https://example.com/acquisition-release",
+          "publisher": "Official press release",
+          "date": "2022-09"
+        }
+      ]
+    },
+
+    "interview_highlights": "Technically the strongest signal was the incident walkthrough — layered, quantified, and honest about a mistake Jordan made themselves. Motivation is specific and verifiable rather than generic. On alignment with how Northwind works, the end-to-end ownership pattern matches well. The one place to press in the next round is scope of leadership: Jordan was candid that they have not managed, and the role expects that growth within a year.",
+
+    "risks": [
+      {
+        "heading": "No formal people-leadership experience",
+        "detail": "Jordan has mentored two juniors and run design reviews but has never carried headcount or owned performance management. The role brief expects them to grow into leading a small team within the first year. Worth a targeted question in the panel about how they would approach their first direct report."
+      },
+      {
+        "heading": "Relocation timeline extends the start date",
+        "detail": "Jordan can meet the 5-day onsite requirement but needs roughly eight weeks to relocate from Austin, on top of a four-week notice period. If this role is backfilling an urgent gap, the practical start date should be confirmed before advancing. Jordan also asked whether relocation support is available, which has not yet been answered."
+      }
+    ]
+  },
+
+  "compliance": {
+    "scrubbed_from_analysis": true,
+    "violations": [
+      {
+        "category": "Pregnancy / Marital & Family Status",
+        "question": "Eight weeks to relocate — is that a family thing? Do you have kids you'd need to move schools?",
+        "speaker": "interviewer",
+        "analysis": "Family status and the presence of children are protected characteristics and may not be used in a hiring decision. The legitimate underlying concern — whether the candidate can meet the required start date — is answerable through a schedule question that does not reference family. The candidate's response has been withheld from Sections 1 and 2; only the eight-week timeline itself, which Jordan stated independently, is retained.",
+        "framework": ["Title VII", "PDA", "FEHA"]
+      },
+      {
+        "category": "Salary History",
+        "question": "What are you making at your current place right now?",
+        "speaker": "interviewer",
+        "analysis": "California Labor Code §432.3 prohibits asking about prior compensation. Only the candidate's forward-looking expectation may be recorded, and the posted pay scale must be provided on reasonable request. The current-salary figure the candidate gave has been excluded from Section 1; the $210,000 expectation recorded there was volunteered separately as a forward-looking target.",
+        "framework": ["CA Labor Code §432.3", "FEHA"]
+      },
+      {
+        "category": "Age",
+        "question": "You've been at this a while — when did you finish school?",
+        "speaker": "interviewer",
+        "analysis": "Graduation date is a widely recognized proxy for age and is prohibited under the ADEA and FEHA. Where the intent is to confirm years of relevant experience, ask about experience directly. The response has been withheld from the analysis.",
+        "framework": ["ADEA", "FEHA"]
+      }
+    ]
+  }
+}

@@ -7,3 +7,8 @@ CREATED-IDS.local.md
 # Python cache (from tools/)
 __pycache__/
 *.pyc
+
+# Node (tools/render_docx.js)
+node_modules/
+package-lock.json
+*.docx

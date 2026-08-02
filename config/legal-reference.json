@@ -1,0 +1,159 @@
+{
+  "description": "Protected characteristics and prohibited interview topics used by the Step 1 compliance scrub. Inlined into the analyst prompt at build time. Federal entries apply everywhere in the US; state entries are gated on config/company-profile.json -> jurisdiction.state. This is an engineering default, NOT legal advice — have counsel review before production use, and see docs/COMPLIANCE.md.",
+  "version": 1,
+  "jurisdiction_default": "US",
+
+  "categories": [
+    {
+      "id": "race_color",
+      "label": "Race / Color",
+      "scope": "federal",
+      "framework": ["Title VII", "42 U.S.C. §1981"],
+      "unacceptable": ["Any question about race, color, or ethnicity", "Questions about hair texture or protective hairstyles (CROWN Act states)"],
+      "acceptable": ["Voluntary, anonymous EEO self-identification collected separately from the hiring process"]
+    },
+    {
+      "id": "national_origin",
+      "label": "National Origin / Citizenship",
+      "scope": "federal",
+      "framework": ["Title VII", "IRCA"],
+      "unacceptable": ["Where are you from originally?", "What is your first language?", "Are you a US citizen?", "Questions about accent, ancestry, or birthplace"],
+      "acceptable": ["Are you authorized to work in the country where this role is based?", "Will you now or in the future require sponsorship?"],
+      "note": "Export-control roles may lawfully ask a narrowly-scoped 'US person' status question where a specific regime genuinely applies. That is a legal-status question, not a national-origin question, and must be scripted by counsel. See docs/COMPLIANCE.md."
+    },
+    {
+      "id": "religion",
+      "label": "Religion",
+      "scope": "federal",
+      "framework": ["Title VII"],
+      "unacceptable": ["What religion do you practice?", "Do you observe any religious holidays?", "What church do you attend?"],
+      "acceptable": ["This role requires occasional weekend coverage — can you meet that schedule?"]
+    },
+    {
+      "id": "sex_gender",
+      "label": "Sex / Gender Identity / Sexual Orientation",
+      "scope": "federal",
+      "framework": ["Title VII", "Bostock v. Clayton County"],
+      "unacceptable": ["Questions about gender identity, transition status, sexual orientation, or pronouns as an eligibility matter"],
+      "acceptable": ["Nothing role-relevant turns on this category"]
+    },
+    {
+      "id": "pregnancy_family",
+      "label": "Pregnancy / Marital & Family Status",
+      "scope": "federal",
+      "framework": ["Title VII", "PDA", "PWFA"],
+      "unacceptable": ["Are you married?", "Do you have children?", "Are you planning to start a family?", "What does your spouse do?", "Who watches your kids?"],
+      "acceptable": ["This role requires travel roughly one week per month — can you meet that requirement?"]
+    },
+    {
+      "id": "age",
+      "label": "Age",
+      "scope": "federal",
+      "framework": ["ADEA"],
+      "unacceptable": ["How old are you?", "When did you graduate high school?", "When do you plan to retire?", "Digital native / recent grad framing"],
+      "acceptable": ["Are you over 18?", "Do you meet the minimum experience requirement for this role?"]
+    },
+    {
+      "id": "disability_medical",
+      "label": "Disability / Medical",
+      "scope": "federal",
+      "framework": ["ADA", "GINA"],
+      "unacceptable": ["Do you have any disabilities?", "Have you filed a workers' compensation claim?", "How many sick days did you take?", "Any questions about family medical history"],
+      "acceptable": ["Can you perform the essential functions of this role, with or without reasonable accommodation?"]
+    },
+    {
+      "id": "salary_history",
+      "label": "Salary History",
+      "scope": "state",
+      "framework": ["State salary-history bans"],
+      "unacceptable": ["What do you currently make?", "What was your last base salary?", "What is your current total comp?"],
+      "acceptable": ["What are your compensation expectations for this role?", "Here is the posted range for this role — does that work for you?"],
+      "note": "Banned in a growing number of states and cities. company-profile.jurisdiction.salary_history_ban gates enforcement; leave it true unless counsel says otherwise."
+    },
+    {
+      "id": "arrest_record",
+      "label": "Arrest & Conviction Record",
+      "scope": "state",
+      "framework": ["Ban-the-box statutes", "EEOC 2012 Guidance"],
+      "unacceptable": ["Have you ever been arrested?", "Any criminal-history question before a conditional offer in ban-the-box jurisdictions"],
+      "acceptable": ["Post-offer, job-related conviction screening conducted under the applicable statute with individualized assessment"]
+    },
+    {
+      "id": "military_status",
+      "label": "Military / Veteran Status",
+      "scope": "federal",
+      "framework": ["USERRA", "VEVRAA"],
+      "unacceptable": ["What type of discharge did you receive?", "Are you in the reserves and could you be deployed?"],
+      "acceptable": ["Voluntary, separate veteran self-identification"]
+    },
+    {
+      "id": "credit_status",
+      "label": "Credit History / Financial Status",
+      "scope": "state",
+      "framework": ["FCRA", "State credit-check restrictions"],
+      "unacceptable": ["Do you own or rent?", "Have you ever declared bankruptcy?", "Have your wages been garnished?"],
+      "acceptable": ["Post-offer, role-justified credit screening with FCRA disclosure and authorization"]
+    },
+    {
+      "id": "genetic_information",
+      "label": "Genetic Information",
+      "scope": "federal",
+      "framework": ["GINA"],
+      "unacceptable": ["Any question about family medical history or genetic testing"],
+      "acceptable": []
+    }
+  ],
+
+  "state_supplements": {
+    "California": {
+      "framework": ["FEHA", "CA Labor Code §432.3", "CA Fair Chance Act", "CROWN Act"],
+      "adds": [
+        "FEHA protections exceed federal coverage and reach employers with 5+ employees.",
+        "Salary history inquiry is prohibited outright, and the pay scale must be provided on reasonable request.",
+        "Criminal-history inquiry is barred until after a conditional offer.",
+        "Protective hairstyles are protected under the CROWN Act.",
+        "Protected categories additionally include medical condition, genetic information, and military/veteran status."
+      ]
+    },
+    "New York": {
+      "framework": ["NYSHRL", "NYC Human Rights Law", "NYC Local Law 144"],
+      "adds": [
+        "Salary history inquiry is prohibited statewide.",
+        "NYC requires a bias audit and candidate notice for automated employment decision tools.",
+        "Caregiver status is a protected category in NYC."
+      ]
+    },
+    "Illinois": {
+      "framework": ["IHRA", "Illinois AI Video Interview Act", "Illinois Equal Pay Act"],
+      "adds": [
+        "Candidates must be notified when AI is used to analyze video interviews, with consent obtained.",
+        "Salary history inquiry is prohibited."
+      ]
+    },
+    "Colorado": {
+      "framework": ["CADA", "Colorado Equal Pay for Equal Work Act"],
+      "adds": [
+        "Compensation range and benefits must be disclosed in the job posting.",
+        "Salary history inquiry is prohibited."
+      ]
+    },
+    "Washington": {
+      "framework": ["WLAD", "Washington Equal Pay and Opportunities Act"],
+      "adds": [
+        "Salary range must be disclosed in the posting for employers with 15+ employees.",
+        "Salary history inquiry is prohibited."
+      ]
+    }
+  },
+
+  "ai_specific": {
+    "note": "This tool applies an AI model to hiring input. Several jurisdictions regulate that directly.",
+    "obligations": [
+      "NYC Local Law 144: annual independent bias audit plus candidate notice for automated employment decision tools.",
+      "Illinois AI Video Interview Act: notice and consent when AI analyzes video interviews.",
+      "EU AI Act: employment-related AI is high-risk, with transparency and human-oversight duties.",
+      "Colorado SB 24-205: developer and deployer duties for high-risk AI in consequential decisions.",
+      "Across all of them the through-line is the same: disclose that AI is in the loop, keep a human decision-maker, and retain records."
+    ]
+  }
+}
