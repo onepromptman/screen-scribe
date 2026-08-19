@@ -12,3 +12,5 @@ __pycache__/
 node_modules/
 package-lock.json
 *.docx
+
+# Generated, but committed: build/analyst-prompt.md (see tools/render_prompt.py)

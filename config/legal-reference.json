@@ -1,5 +1,5 @@
 {
-  "description": "Protected characteristics and prohibited interview topics used by the Step 1 compliance scrub. Inlined into the analyst prompt at build time. Federal entries apply everywhere in the US; state entries are gated on config/company-profile.json -> jurisdiction.state. This is an engineering default, NOT legal advice — have counsel review before production use, and see docs/COMPLIANCE.md.",
+  "description": "Protected characteristics and prohibited interview topics used by the Step 1 compliance scrub. Inlined into the analyst prompt by tools/render_prompt.py; federal categories always, state categories and the matching state supplement gated on jurisdiction.state. Federal entries apply everywhere in the US; state entries are gated on config/company-profile.json -> jurisdiction.state. This is an engineering default, NOT legal advice — have counsel review before production use, and see docs/COMPLIANCE.md.",
   "version": 1,
   "jurisdiction_default": "US",
 

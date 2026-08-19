@@ -105,6 +105,30 @@ writes over the API (the note path exists but the pack targets Ashby/Lever).
 
 The ATS upload lands as a candidate **note/feedback**, not a native scorecard.
 
+## Two output profiles
+
+The spine runs two different output profiles. They share SOURCE, RESOLVE, and
+SINK; they differ in what ENRICH is asked to produce and what FORMAT renders.
+
+| | **Screen writeup** (default) | **Analyst report** |
+|---|---|---|
+| Prompt | baked into the workflow by `tools/build_workflows.py` | `config/analyst-prompt.md` → `build/analyst-prompt.md` via `tools/render_prompt.py` |
+| Contract | `config/output-schema.json` | `config/analyst-output-schema.json` |
+| FORMAT | Markdown → Google Doc | `.docx` via `tools/render_docx.js` (offline, not an n8n node) |
+| Compliance scrub | — | yes, ahead of extraction |
+| Verdict | model emits `recommendation` | refused — a human types it |
+
+The three archetypes below describe the screen-writeup profile. See
+`docs/ANALYST-PROFILE.md` for the analyst one.
+
+**One thing to decide before you ship either.** The two profiles take opposite
+positions on the same question: the screen writeup *requires* the model to emit
+an overall `recommendation`, while the analyst report *refuses* to let it emit
+one. Both positions are defensible — a screen writeup is triage, an analyst
+report goes to an executive — but the difference is a deliberate choice, not an
+accident, and it is worth confirming it matches your own policy before either
+profile reaches a real candidate.
+
 ## The customization surface
 
 This is the part you actually tune. It is deliberately concentrated in three

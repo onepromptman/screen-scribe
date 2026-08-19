@@ -384,38 +384,73 @@ function build(report, profile) {
 
 /* ---------- cli ---------- */
 
+const REQUIRED_TOP_LEVEL = ['candidate_info', 'qualifications', 'compliance'];
+
+function fail(msg) {
+  console.error(msg);
+  process.exit(1);
+}
+
+function readJson(file, label) {
+  let raw;
+  try {
+    raw = fs.readFileSync(file, 'utf8');
+  } catch (e) {
+    fail(`cannot read ${label} (${file}): ${e.code === 'ENOENT' ? 'no such file' : e.message}`);
+  }
+  try {
+    return JSON.parse(raw);
+  } catch (e) {
+    fail(`${label} (${file}) is not valid JSON: ${e.message}`);
+  }
+}
+
+/**
+ * The two hard stops, plus a shape check so a malformed model response reports
+ * what is missing instead of throwing from deep inside the layout code.
+ * Returns an error string, or null when the report is safe to render.
+ */
+function refusalReason(report) {
+  const absent = REQUIRED_TOP_LEVEL.filter((k) => !report[k]);
+  if (absent.length) {
+    return `refusing to render: report is missing required key(s): ${absent.join(', ')} ` +
+      '(see config/analyst-output-schema.json)';
+  }
+  const v = (report.compliance && report.compliance.violations) || [];
+  if (v.length > 0 && report.compliance.scrubbed_from_analysis !== true) {
+    return `refusing to render: ${v.length} compliance violation(s) flagged but ` +
+      'compliance.scrubbed_from_analysis is not true';
+  }
+  if (report.recruiter_recommendation) {
+    return 'refusing to render: recruiter_recommendation must be null (a human fills it in)';
+  }
+  return null;
+}
+
 function main() {
   const argv = process.argv.slice(2);
-  const src = argv.find((a) => !a.startsWith('-'));
   const outIdx = argv.indexOf('-o');
   const out = outIdx > -1 ? argv[outIdx + 1] : 'report.docx';
+  // skip the -o value so `-o out.docx report.json` works in either order
+  const src = argv.find((a, i) => !a.startsWith('-') && !(outIdx > -1 && i === outIdx + 1));
   if (!src) {
     console.error('usage: node tools/render_docx.js <report.json> [-o out.docx]');
     process.exit(2);
   }
 
-  const report = JSON.parse(fs.readFileSync(src, 'utf8'));
-  const profile = JSON.parse(fs.readFileSync(path.join(ROOT, 'config', 'company-profile.json'), 'utf8'));
+  const report = readJson(src, 'report');
+  const profile = readJson(path.join(ROOT, 'config', 'company-profile.json'), 'company profile');
 
-  // Refuse to render a document whose flagged content was never withheld.
-  const v = (report.compliance && report.compliance.violations) || [];
-  if (v.length > 0 && report.compliance.scrubbed_from_analysis !== true) {
-    console.error(
-      `refusing to render: ${v.length} compliance violation(s) flagged but ` +
-        'compliance.scrubbed_from_analysis is not true',
-    );
-    process.exit(1);
-  }
-  if (report.recruiter_recommendation) {
-    console.error('refusing to render: recruiter_recommendation must be null (a human fills it in)');
-    process.exit(1);
-  }
+  const refusal = refusalReason(report);
+  if (refusal) fail(refusal);
 
-  Packer.toBuffer(build(report, profile)).then((buf) => {
-    fs.writeFileSync(out, buf);
-    console.log(`wrote ${out} (${(buf.length / 1024).toFixed(1)} KB)`);
-  });
+  Packer.toBuffer(build(report, profile))
+    .then((buf) => {
+      fs.writeFileSync(out, buf);
+      console.log(`wrote ${out} (${(buf.length / 1024).toFixed(1)} KB)`);
+    })
+    .catch((e) => fail(`failed to render: ${e.message}`));
 }
 
 if (require.main === module) main();
-module.exports = { build };
+module.exports = { build, refusalReason, REQUIRED_TOP_LEVEL };

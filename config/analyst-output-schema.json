@@ -152,7 +152,7 @@
             "properties": {
               "category": {
                 "type": "string",
-                "description": "Protected characteristic or prohibited topic, e.g. 'National Origin', 'Salary History', 'Disability'. Must match a category id in config/legal-reference.json."
+                "description": "Protected characteristic or prohibited topic. Must match a category *label* in config/legal-reference.json exactly — e.g. 'National Origin / Citizenship', 'Salary History', 'Disability / Medical'. The label is what the renderer prints as the heading; the machine-readable id sits alongside it in the legal reference."
               },
               "question": { "type": "string", "description": "Exact quote from the transcript." },
               "speaker": { "type": ["string", "null"], "enum": ["interviewer", "candidate", null] },

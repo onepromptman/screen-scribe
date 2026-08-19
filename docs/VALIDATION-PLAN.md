@@ -32,6 +32,8 @@ dry-run preview, and asserts the rendered doc and request shapes.
 node tools/test_logic.js   # exits non-zero on any failure
 ```
 
+`npm run check` runs Layers 1, 2, and 2b in one command.
+
 This tests the deterministic logic (parsing, rendering, request building). It does
 NOT test the live model call or the Google/Slack/ATS HTTP I/O; those are Layer 3.
 
@@ -47,6 +49,36 @@ Additional offline contract checks:
     `{"value": "..."}`.
   - Ashby add note: `POST https://api.ashbyhq.com/candidate.createNote` body
     `{"candidateId": "...", "note": "..."}`.
+
+## Layer 2b: the analyst profile (offline)
+
+The analyst profile has its own contract and its own validators. Both run with
+no credentials and no live n8n.
+
+```bash
+python3 tools/render_prompt.py --check   # the built prompt is current
+python3 tools/validate_workflows.py      # includes the analyst profile checks
+node tools/test_render.js                # the renderer's refusals + happy path
+```
+
+What Layer 2b asserts:
+
+- `config/analyst-output-schema.json` is an object schema whose `required[]`
+  matches what the renderer actually demands.
+- `config/company-profile.json` carries every field the prompt renderer needs,
+  and `report.accent_color` is a bare 6-digit hex string.
+- `jurisdiction.state` names a state that `legal-reference.json` actually ships a
+  supplement for (or is `null` for federal-only).
+- `legal-reference.json` categories have unique ids and unique labels, and every
+  category declares a known `scope`.
+- `tools/sample-analyst-report.json` validates against the schema, leaves
+  `recruiter_recommendation` null, and only uses violation categories that exist
+  as labels in the legal reference.
+- `build/analyst-prompt.md` exists, is current, has no unresolved
+  `{{placeholders}}`, and carries the inlined legal reference.
+- The renderer refuses all three of: unscrubbed violations, a pre-filled
+  recommendation, and a report missing a required section — and writes no file
+  when it refuses.
 
 ## Layer 3: live smoke test (manual, in the n8n UI)
 
@@ -70,7 +102,7 @@ Then, when you are ready to go live on one candidate:
 
 ## Exit criteria
 
-- Layers 1 and 2 pass for all three archetypes.
+- Layers 1, 2, and 2b pass for all three archetypes.
 - Layer 3 steps 1 to 6 pass for all three in TEST_MODE.
 - All three remain inactive until you activate them.
 - No credential material is committed.

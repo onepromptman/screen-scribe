@@ -1,12 +1,15 @@
 {
   "name": "screen-scribe",
-  "version": "1.2.0",
+  "version": "1.3.0",
   "description": "Turn a recruiter screen into a consistent, compliant writeup",
   "license": "MIT",
   "private": true,
   "scripts": {
-    "test": "node tools/test_logic.js",
+    "build": "python3 tools/build_workflows.py && python3 tools/render_prompt.py",
+    "build:prompt": "python3 tools/render_prompt.py",
     "validate": "python3 tools/validate_workflows.py",
+    "test": "node tools/test_logic.js && node tools/test_render.js",
+    "check": "npm run validate && npm test",
     "sample": "node tools/render_docx.js tools/sample-analyst-report.json -o sample-report.docx"
   },
   "dependencies": {

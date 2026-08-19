@@ -1,0 +1,57 @@
+name: check
+
+# Everything here is offline: no credentials, no network calls to n8n, Google,
+# a model provider, or an ATS. The whole point of the pack's validation design
+# (docs/VALIDATION-PLAN.md, Layers 1, 2 and 2b) is that it runs without any.
+on:
+  push:
+    branches: ['**']
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install the docx renderer
+        run: npm install
+
+      - name: Generated files are current
+        # The templates and the analyst prompt are committed build artifacts.
+        # A config edit that was not rebuilt is a broken import for whoever
+        # downloads the repo, so fail loudly rather than at import time.
+        run: |
+          python3 tools/build_workflows.py
+          python3 tools/render_prompt.py
+          git diff --exit-code || {
+            echo '::error::Generated files are stale. Run `npm run build` and commit the result.'
+            exit 1
+          }
+
+      - name: Validate (Layers 1, 2, 2b)
+        run: npm run validate
+
+      - name: Test (workflow logic + the .docx renderer)
+        run: npm test
+
+      - name: No credential material committed
+        run: |
+          if grep -rniE '(sk-[a-zA-Z0-9]{16,}|AKIA[0-9A-Z]{16}|-----BEGIN [A-Z ]*PRIVATE KEY-----)' \
+               --exclude-dir=node_modules --exclude-dir=.git .; then
+            echo '::error::Possible credential material found.'
+            exit 1
+          fi
+          if grep -o '"id": "[^"]*"' templates/*.json | grep -v REPLACE_WITH | grep -qi 'cred'; then
+            echo '::error::Non-placeholder credential id in a template.'
+            exit 1
+          fi

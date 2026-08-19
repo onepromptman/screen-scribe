@@ -126,6 +126,37 @@ also export the Doc to PDF and drop it in the Drive folder (no extra service —
 reuses the Doc you already created), and — for A3 — a note on the candidate's
 record in Ashby or Lever.
 
+## The other profile: the analyst report
+
+Everything above is the **screen writeup** — fast, high-volume, one Doc per
+screen. The pack ships a second output profile on the same spine for when the
+reader is senior and the stakes are higher:
+
+| | **Screen writeup** (default) | **Analyst report** |
+|---|---|---|
+| Output | Google Doc + Sheet row | a templated **`.docx`** |
+| Reads | notes from your notetaker | an interview **transcript** |
+| Compliance scrub | — | yes — protected-characteristic content is flagged and withheld *before* analysis |
+| Employer research | — | yes, cited, tagged `[AI INSIGHT]` |
+| Provenance | evidence + confidence per answer | every field carries its source, with the verbatim quote |
+| The verdict | the model writes a recommendation | **refused** — the document prints a placeholder for a human to fill in |
+| Audience | the next interviewer | hiring managers and executives |
+
+```bash
+npm install            # one-time
+npm run sample         # render the bundled fictional sample
+npm run build:prompt   # resolve the prompt against your company profile
+```
+
+Point it at your own org by editing **one file**, `config/company-profile.json` —
+the prompt, the schema, and the Word renderer all read from it. Full walkthrough
+in `docs/ANALYST-PROFILE.md`; the legal reasoning and its limits are in
+`docs/COMPLIANCE.md`.
+
+> The compliance scrub and the legal reference are an engineering default, not
+> legal advice. Have employment counsel review them before you point this at real
+> candidates.
+
 ## Quickstart
 
 1. Read `docs/ARCHITECTURE.md` for the five-module spine and how to swap modules.
@@ -140,6 +171,14 @@ record in Ashby or Lever.
    would be created and written, with zero external writes.
 7. Happy with the preview? Set `TEST_MODE=false` and run again to go live.
 
+Working on the pack itself rather than just importing it?
+
+```bash
+npm install       # the docx renderer (analyst profile only)
+npm run build     # regenerate the workflows and the analyst prompt from config/
+npm run check     # offline validation + tests, no credentials needed
+```
+
 ## What you customize (and where)
 
 | You want to change | Edit |
@@ -153,6 +192,8 @@ record in Ashby or Lever.
 | Auto-pull the candidate's resume | `fetch_resume` + `candidate_resume_link` in `Set Config` (A2/A3) |
 | Also deliver a PDF | `deliver_pdf` in `Set Config` |
 | Which ATS (A3) | `ats_provider` in `Set Config` (`ashby` or `lever`) |
+| Your company, work policy, jurisdiction (analyst profile) | `config/company-profile.json` — then `npm run build:prompt` |
+| What the compliance scrub enforces | `config/legal-reference.json` |
 
 ## Extensions (ideas, not built in)
 
@@ -189,11 +230,15 @@ That's a fork of A2 with a different `standard-questions.json`, not new plumbing
 ```
 docs/ARCHITECTURE.md      the five-module spine, the archetypes, the swap matrix
 docs/CUSTOMIZE.md         step-by-step customization walkthrough
+docs/ANALYST-PROFILE.md   the second output profile: transcript in, .docx out
+docs/COMPLIANCE.md        what the scrub does, and what it does not do for you
 docs/VALIDATION-PLAN.md   how to validate before going live
+docs/PART-2.md            what a capture + scorecard extension would take
 docs/integrations/        Ashby + Lever setup notes (A3)
-config/                   standard-questions, output-schema, doc template
+config/                   questions, schemas, templates, company profile, legal reference
 templates/                the three importable workflows + SETUP.md
-tools/                    regenerate the templates from config, offline validators
+tools/                    builders, the .docx renderer, offline validators + tests
+build/                    generated — the resolved analyst prompt
 ```
 
 ## Not included
@@ -201,8 +246,14 @@ tools/                    regenerate the templates from config, offline validato
 - No credentials or org data. All ids are placeholders; the enrichment prompt
   uses a placeholder `company_context` you replace.
 - No candidate data. Sample notes in the workflows are fictional.
-- Greenhouse ATS: excluded by design (no scorecard write over the API). Ashby and
-  Lever only.
+- Greenhouse ATS: excluded by design. Greenhouse's Harvest API exposes scorecards
+  read-only — three `GET` endpoints, no create or update — so a third party
+  cannot submit interview feedback through the public API. (Vendors that do fill
+  Greenhouse scorecards do it under private partner grants.) The note path would
+  work; the pack targets Ashby and Lever, where the contract is public.
+- Audio, recording, or transcription. The pack starts from an artifact your
+  notetaker already produced. See `docs/PART-2.md` for what changing that
+  would cost.
 
 ## Support
 

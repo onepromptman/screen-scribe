@@ -2,15 +2,16 @@
 Screen Scribe — analyst profile prompt (source of truth).
 
 Genericized: every company-specific fact is a {{placeholder}} resolved from
-config/company-profile.json at build time by tools/build_workflows.py. Do not
-hardcode a company name, work policy, or jurisdiction in this file.
+config/company-profile.json by tools/render_prompt.py, which writes the resolved
+prompt to build/analyst-prompt.md. Do not hardcode a company name, work policy,
+or jurisdiction in this file.
 
-Placeholders resolved: company.name, company.short_name, company.industry,
-company.location, company.context, work_policy.label, work_policy.detail,
-work_policy.negotiable_clause, regulatory.clause, jurisdiction.clause,
-jurisdiction.salary_history_clause, report.analyst_persona,
-report.recommendation_placeholder, legal_reference (inlined from
-config/legal-reference.json).
+Placeholders resolved: company.name, company.industry, company.location,
+company.context, work_policy.label, work_policy.detail, report.analyst_persona,
+report.recommendation_placeholder — read straight from the profile; plus four
+clauses composed from several fields (work_policy.negotiable_clause,
+regulatory.clause, jurisdiction.clause, jurisdiction.salary_history_clause) and
+legal_reference, inlined from config/legal-reference.json.
 
 Output contract: config/analyst-output-schema.json. The model emits JSON only.
 Section numbering and headings live in tools/render_docx.js — the model does not
