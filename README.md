@@ -17,6 +17,13 @@ This is three importable n8n workflows that fix that. Point one at your notes,
 your storage, and (optionally) your ATS, and every screen comes out the same
 shape, in the same place, without anyone retyping anything.
 
+**Who it's for.** Scrappy teams that don't yet have a clean, consistent way to
+capture and summarize recruiter screens, and don't want to pay for a dedicated
+interview-intelligence platform to get one. If you already have an AI notetaker
+producing a summary (Gemini in Google Meet, Otter, a notes doc, or an email),
+Screen Scribe turns that into a structured, ATS-ready writeup with no new
+subscription and nothing leaving tools you already run.
+
 ![A finished screen writeup, generated automatically — every answer carries its evidence from the notes and a confidence rating. Sample uses fictional data.](assets/sample-writeup.png)
 
 ## What actually happens
