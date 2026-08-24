@@ -1,6 +1,7 @@
-> **Reference implementation.** Every workflow imports and runs in `TEST_MODE`
-> (dry run, zero external writes) out of the box — preview the whole pipeline, then
-> wire your own credentials and ids before going live on real candidates.
+> **Ready-to-use templates.** Every workflow imports and runs in `TEST_MODE`
+> (a safe preview: it shows what would be created and sent, without actually creating
+> or sending anything), so you can try the whole flow first, then wire your own
+> credentials and ids before going live on real candidates.
 
 # Screen Scribe (n8n)
 
@@ -10,10 +11,10 @@ the moment the call ends.**
 Every screen ends the same way: good signal in your head, then fifteen minutes
 spent writing it up before it evaporates. Every recruiter formats it a little
 differently. Hiring managers get inconsistent writeups. Nothing lands in the
-same place twice, and nobody's ATS record reflects what was actually said on
-the call.
+same place twice, and nobody's ATS (applicant tracking system) record reflects
+what was actually said on the call.
 
-This is three importable n8n workflows that fix that. Point one at your notes,
+This is three importable n8n workflows (n8n is a free, no-code automation tool) that fix that. Point one at your notes,
 your storage, and (optionally) your ATS, and every screen comes out the same
 shape, in the same place, without anyone retyping anything.
 

@@ -17,6 +17,9 @@ so there are no workflow-id references to rewire on import.
 
 ## Credentials to create (n8n -> Credentials)
 
+These are n8n credential types (the login or API-key connections n8n uses to reach
+each service). Create each one in n8n, then attach it to the nodes listed.
+
 | Credential type | Used by | Archetypes |
 |---|---|---|
 | `googleDocsOAuth2Api` | Create Doc, Insert Doc Body | A1, A2, A3 |
