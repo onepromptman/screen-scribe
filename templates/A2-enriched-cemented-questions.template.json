@@ -37,19 +37,19 @@
             {
               "id": "5758a0ece55bd10a5e8bdee1a5452a00",
               "name": "sample_notes",
-              "value": "Recruiter screen with Jordan Rivera for the Senior Backend Engineer role.\nJordan is currently a backend engineer at a fintech scale-up, 6 years experience, mostly Python and Go, owns their team's payments service.\nMotivated by wanting more ownership and a mission they care about; heard about us from a former colleague.\nComp expectation around 210k base, flexible on equity. Available in 4 weeks (standard notice).\nBased in Austin, open to hybrid in SF two weeks a month, no visa needs.\nStrong on system design in the conversation, walked through a real incident well.\nOne concern: has not led a team formally, though has mentored two juniors.\n",
+              "value": "Recruiter screen with Saitama Goku for the Senior Backend Engineer role.\nSaitama is currently a backend engineer at a fintech scale-up, 6 years experience, mostly Python and Go, owns their team's payments service.\nMotivated by wanting more ownership and a mission they care about; heard about us from a former colleague.\nComp expectation around 210k base, flexible on equity. Available in 4 weeks (standard notice).\nBased in Austin, open to hybrid in SF two weeks a month, no visa needs.\nStrong on system design in the conversation, walked through a real incident well.\nOne concern: has not led a team formally, though has mentored two juniors.\n",
               "type": "string"
             },
             {
               "id": "16abf0f36a1190d19af17f95da4fa4a0",
               "name": "candidate_name",
-              "value": "Jordan Rivera",
+              "value": "Saitama Goku",
               "type": "string"
             },
             {
               "id": "5d6353a0fccdf9ef99237ee471c7eccd",
               "name": "candidate_email",
-              "value": "jordan.rivera@example.com",
+              "value": "saitama.goku@example.com",
               "type": "string"
             },
             {

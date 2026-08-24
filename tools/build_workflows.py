@@ -35,8 +35,8 @@ CRED = {
 }
 
 SAMPLE_NOTES = (
-    "Recruiter screen with Jordan Rivera for the Senior Backend Engineer role.\n"
-    "Jordan is currently a backend engineer at a fintech scale-up, 6 years experience, "
+    "Recruiter screen with Saitama Goku for the Senior Backend Engineer role.\n"
+    "Saitama is currently a backend engineer at a fintech scale-up, 6 years experience, "
     "mostly Python and Go, owns their team's payments service.\n"
     "Motivated by wanting more ownership and a mission they care about; heard about us from a former colleague.\n"
     "Comp expectation around 210k base, flexible on equity. Available in 4 weeks (standard notice).\n"
@@ -286,8 +286,8 @@ def set_config(archetype):
          "value": "<org_name> is a placeholder company. Replace this with a short description of your company, the role's team, and what a strong hire looks like. It is injected into the enrichment prompt.",
          "type": "string"},
         {"id": nid("a-sample"), "name": "sample_notes", "value": SAMPLE_NOTES, "type": "string"},
-        {"id": nid("a-cn"), "name": "candidate_name", "value": "Jordan Rivera", "type": "string"},
-        {"id": nid("a-ce"), "name": "candidate_email", "value": "jordan.rivera@example.com", "type": "string"},
+        {"id": nid("a-cn"), "name": "candidate_name", "value": "Saitama Goku", "type": "string"},
+        {"id": nid("a-ce"), "name": "candidate_email", "value": "saitama.goku@example.com", "type": "string"},
         {"id": nid("a-cr"), "name": "candidate_role", "value": "Senior Backend Engineer", "type": "string"},
         {"id": nid("a-cl"), "name": "candidate_linkedin", "value": "https://www.linkedin.com/in/example", "type": "string"},
         {"id": nid("a-crt"), "name": "candidate_resume_text", "value": "", "type": "string"},
@@ -560,7 +560,7 @@ def main():
 
     # sample enriched object for the validator (Layer 2)
     sample = {
-        "candidate": {"name": "Jordan Rivera", "email": "jordan.rivera@example.com",
+        "candidate": {"name": "Saitama Goku", "email": "saitama.goku@example.com",
                       "role": "Senior Backend Engineer",
                       "linkedin_url": "https://www.linkedin.com/in/example", "resume_link": None},
         "screen_date": "2026-07-16",

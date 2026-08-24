@@ -57,8 +57,8 @@ function runPipeline(atsProvider) {
 console.log('== A3 pipeline (ashby) ==');
 let s = runPipeline('ashby');
 const fmt = s['Format Screen (FORMAT)'];
-check(typeof fmt.doc_title === 'string' && fmt.doc_title.includes('Jordan Rivera'), 'doc_title has candidate');
-check(fmt.doc_body_markdown.includes('# Recruiter Screen: Jordan Rivera'), 'doc heading rendered');
+check(typeof fmt.doc_title === 'string' && fmt.doc_title.includes('Saitama Goku'), 'doc_title has candidate');
+check(fmt.doc_body_markdown.includes('# Recruiter Screen: Saitama Goku'), 'doc heading rendered');
 check(fmt.doc_body_markdown.includes('## Standard screen questions'), 'standard questions section rendered');
 const leftovers = fmt.doc_body_markdown.match(/\{\{[^}]+\}\}/g);
 check(!leftovers, 'no unrendered {{ }} placeholders remain' + (leftovers ? ' -> ' + JSON.stringify([...new Set(leftovers)]) : ''));
@@ -66,7 +66,7 @@ check((fmt.doc_body_markdown.match(/### /g) || []).length >= 8, 'all 8 question 
 check(fmt.doc_body_markdown.includes('advance'), 'recommendation rendered');
 const lk = s['Build ATS Lookup'].ats_lookup;
 check(lk.method === 'POST' && lk.url === 'https://api.ashbyhq.com/candidate.search', 'ashby lookup url/method');
-check(lk.body && lk.body.email === 'jordan.rivera@example.com', 'ashby lookup email');
+check(lk.body && lk.body.email === 'saitama.goku@example.com', 'ashby lookup email');
 const nt = s['Build ATS Note'].ats_note;
 check(nt.url === 'https://api.ashbyhq.com/candidate.createNote', 'ashby note url');
 check(nt.body.candidateId === 'CAND999' && typeof nt.body.note === 'string' && nt.body.note.includes('DOCTEST123'), 'ashby note body has candidateId + doc link');
@@ -77,7 +77,7 @@ console.log('== A3 pipeline (lever) ==');
 s = runPipeline('lever');
 const lk2 = s['Build ATS Lookup'].ats_lookup;
 check(lk2.method === 'GET' && lk2.url.startsWith('https://api.lever.co/v1/opportunities?email='), 'lever lookup url/method');
-check(lk2.url.includes('jordan.rivera%40example.com'), 'lever lookup email url-encoded');
+check(lk2.url.includes('saitama.goku%40example.com'), 'lever lookup email url-encoded');
 const nt2 = s['Build ATS Note'].ats_note;
 check(nt2.url === 'https://api.lever.co/v1/opportunities/CAND999/notes', 'lever note url has candidate id');
 check(typeof nt2.body.value === 'string' && nt2.body.value.includes('DOCTEST123'), 'lever note body.value has doc link');
@@ -93,7 +93,7 @@ console.log('== Format fallback (no model / A1 path) ==');
   const out = runCode(codeOf(A3, 'Format Screen (FORMAT)'), store['Fetch Notes (SOURCE)'], store);
   check(typeof out.doc_body_markdown === 'string' && out.doc_body_markdown.length > 20, 'fallback renders a body');
   check(out.screen_output && out.screen_output.recommendation === 'maybe', 'fallback default recommendation');
-  check(out.doc_body_markdown.includes('Jordan Rivera'), 'fallback uses candidate from config');
+  check(out.doc_body_markdown.includes('Saitama Goku'), 'fallback uses candidate from config');
 }
 
 // ---- enrichment level -> directive (low/medium/high, default on unknown) ----
